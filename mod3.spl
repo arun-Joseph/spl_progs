@@ -1,0 +1,197 @@
+alias functionNum R1;
+
+if(functionNum == 1) then         //Buffered Write
+  alias bufferNum R5;
+  bufferNum = R2%4;
+
+  multipush(R1, R2, R3, R4, R5);
+  R1 = 1;
+  R2 = R5;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R1, R2, R3, R4, R5);
+
+  if([BUFFER_TABLE + bufferNum*4] != R2) then
+    if([BUFFER_TABLE + bufferNum*4 + 1] == 1) then
+      multipush(R1, R2, R3, R4, R5);
+      R1 = 1;
+      R2 = [SYSTEM_STATUS_TABLE + 1];
+      R3 = bufferNum + 71;
+      R4 = [BUFFER_TABLE + bufferNum*4];
+      call MOD_4;
+      multipop(R1, R2, R3, R4, R5);
+
+      [BUFFER_TABLE + bufferNum*4 + 1] = 0;
+    endif;
+
+    multipush(R1, R2, R3, R4, R5);
+    R1 = 2;
+    R3 = bufferNum + 71;
+    R4 = R2;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_4;
+    multipop(R1, R2, R3, R4, R5);
+
+    [BUFFER_TABLE + bufferNum*4] = R2;
+  endif;
+
+  [(bufferNum + 71)*512 + R3] = R4;
+  [BUFFER_TABLE + bufferNum*4 + 1] = 1;
+
+  multipush(R1, R2, R3, R4, R5);
+  R1 = 2;
+  R2 = R5;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R1, R2, R3, R4, R5);
+endif;
+
+if(functionNum == 2) then         //Buffered Read
+  alias bufferNum R5;
+  bufferNum = R2%4;
+
+  multipush(R1, R2, R3, R4, R5);
+  R1 = 1;
+  R2 = R5;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R1, R2, R3, R4, R5);
+
+  if([BUFFER_TABLE + bufferNum*4] != R2) then
+    if([BUFFER_TABLE + bufferNum*4 + 1] == 1) then
+      multipush(R1, R2, R3, R4, R5);
+      R1 = 1;
+      R2 = [SYSTEM_STATUS_TABLE + 1];
+      R3 = bufferNum + 71;
+      R4 = [BUFFER_TABLE + bufferNum*4];
+      call MOD_4;
+      multipop(R1, R2, R3, R4, R5);
+
+      [BUFFER_TABLE + bufferNum*4 + 1] = 0;
+    endif;
+
+    multipush(R1, R2, R3, R4, R5);
+    R1 = 2;
+    R3 = bufferNum + 71;
+    R4 = R2;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_4;
+    multipop(R1, R2, R3, R4, R5);
+
+    [BUFFER_TABLE + bufferNum*4] = R2;
+  endif;
+
+  [R4] = [(bufferNum + 71)*512 + R3];
+
+  multipush(R1, R2, R3, R4, R5);
+  R1 = 2;
+  R2 = R5;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R1, R2, R3, R4, R5);
+endif;
+
+if(functionNum == 3) then         //Open
+  alias inodeIndex R5;
+  inodeIndex = 0;
+  while(inodeIndex < 60) do
+    if([INODE_TABLE + inodeIndex*16 + 1] == R2) then
+      break;
+    endif;
+    inodeIndex = inodeIndex + 1;
+  endwhile;
+
+  if(inodeIndex == 60) then
+    R0 = -1;
+    return;
+  endif;
+
+  multipush(R1, R2, R5);
+  R1 = 4;
+  R2 = inodeIndex;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R1, R2, R5);
+
+  if(R0 == -1) then
+    return;
+  endif;
+
+  if([INODE_TABLE + inodeIndex*16] == EXEC) then
+    multipush(R1, R2, R5);
+    R1 = 5;
+    R2 = inodeIndex;
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_0;
+    multipop(R1, R2, R5);
+
+    R0 = -1;
+    return;
+  endif;
+
+  alias fileIndex R6;
+  fileIndex = 0;
+  while(fileIndex < 32) do
+    if([OPEN_FILE_TABLE + fileIndex*4] == -1) then
+      break;
+    endif;
+    fileIndex = fileIndex + 1;
+  endwhile;
+
+  if(fileIndex == 32) then
+    multipush(R1, R2, R5, R6);
+    R1 = 5;
+    R2 = inodeIndex;
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_0;
+    multipop(R1, R2, R5, R6);
+
+    R0 = -2;
+    return;
+  endif;
+
+  if(R2 == "root") then
+    [OPEN_FILE_TABLE + fileIndex*4] = INODE_ROOT;
+  else
+    if([FILE_STATUS_TABLE + inodeIndex*4 + 1] == -1) then
+      [FILE_STATUS_TABLE + inodeIndex*4 + 1] = 1;
+    else
+      [FILE_STATUS_TABLE + inodeIndex*4 + 1] = [FILE_STATUS_TABLE + inodeIndex*4 + 1] + 1;
+    endif;
+    [OPEN_FILE_TABLE + fileIndex*4] = inodeIndex;
+  endif;
+
+  [OPEN_FILE_TABLE + fileIndex*4 + 1] = 1;
+  [OPEN_FILE_TABLE + fileIndex*4 + 2] = 0;
+
+  multipush(R1, R2, R5, R6);
+  R1 = 5;
+  R2 = inodeIndex;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R1, R2, R5, R6);
+
+  R0 = fileIndex;
+endif;
+
+if(functionNum == 4) then         //Close
+  alias inodeIndex R5;
+  inodeIndex = [OPEN_FILE_TABLE + R2*4];
+
+  [OPEN_FILE_TABLE + R2*4 + 1] = [OPEN_FILE_TABLE + R2*4 + 1] - 1;
+
+  if([OPEN_FILE_TABLE + R2*4 + 1] == 0) then
+    [OPEN_FILE_TABLE + R2*4] = -1;
+
+    if([INODE_TABLE + inodeIndex*16 + 1] != "root") then
+      [FILE_STATUS_TABLE + inodeIndex*4 + 1] = [FILE_STATUS_TABLE + inodeIndex*4 + 1] - 1;
+    endif;
+    if([FILE_STATUS_TABLE + inodeIndex*4 + 1] == 0) then
+      [FILE_STATUS_TABLE + inodeIndex*4 + 1] = -1;
+    endif;
+  endif;
+
+  R0 = 0;
+endif;
+
+return;

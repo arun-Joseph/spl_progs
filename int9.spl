@@ -1,0 +1,117 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 9;
+
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias fileNamePhysicalAddr R1;
+alias fileName R2;
+fileNamePhysicalAddr = [PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512;
+fileName = [fileNamePhysicalAddr];
+
+alias inodeIndex R3;
+inodeIndex = 0;
+while(inodeIndex < 60) do
+  if([INODE_TABLE + inodeIndex*16] == EXEC && [INODE_TABLE + inodeIndex*16 + 1] == fileName) then
+    break;
+  endif;
+  inodeIndex = inodeIndex + 1;
+endwhile;
+
+if(inodeIndex == 60) then
+  alias physicalAddrRetVal R4;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = -1;
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  SP = userSP;
+  ireturn;
+endif;
+
+multipush(R0, R1, R2, R3);
+R1 = 3;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call MOD_1;
+multipop(R0, R1, R2, R3);
+
+alias userAreaPageNum R4;
+userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+[MEMORY_FREE_LIST + userAreaPageNum] = [MEMORY_FREE_LIST + userAreaPageNum] + 1;
+[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+
+alias newPID R5;
+SP = userAreaPageNum*512 - 1;
+newPID = [SYSTEM_STATUS_TABLE + 1];
+[PROCESS_TABLE + newPID*16 + 4] = RUNNING;
+[PROCESS_TABLE + newPID*16 + 7] = inodeIndex;
+
+[PAGE_TABLE_BASE + 20*newPID] = 63;
+[PAGE_TABLE_BASE + 20*newPID + 1] = "0100";
+[PAGE_TABLE_BASE + 20*newPID + 2] = 64;
+[PAGE_TABLE_BASE + 20*newPID + 3] = "0100";
+
+alias num R6;
+alias page R7;
+alias disk R8;
+num = 4;
+while(num < 8) do
+  [PAGE_TABLE_BASE + 20*newPID + num] = -1;
+  [PAGE_TABLE_BASE + 20*newPID + num + 1] = "0000";
+  num = num + 2;
+endwhile;
+
+disk = [INODE_TABLE + 16*inodeIndex + 8];
+multipush(R0, R1, R2, R3, R4, R5, R6, R8);
+R1 = 5;
+R2 = disk;
+call MOD_2;
+page = R0;
+multipop(R0, R1, R2, R3, R4, R5, R6, R8);
+[PAGE_TABLE_BASE + 20*newPID + 8] = page;
+[PAGE_TABLE_BASE + 20*newPID + 9] = "0100";
+
+num = 10;
+while(num < 16) do
+  [PAGE_TABLE_BASE + 20*newPID + num] = -1;
+  [PAGE_TABLE_BASE + 20*newPID + num + 1] = "0000";
+  num = num + 2;
+endwhile;
+
+num = 16;
+while(num < 20) do
+  multipush(R0, R1, R2, R3, R4, R5, R6);
+  R1 = 1;
+  call MOD_2;
+  page = R0;
+  multipop(R0, R1, R2, R3, R4, R5, R6);
+
+  [PAGE_TABLE_BASE + 20*newPID + num] = page;
+  [PAGE_TABLE_BASE + 20*newPID + num + 1] = "0110";
+  num = num + 2;
+endwhile;
+
+num = 496;
+while(num < 512) do
+  [userAreaPageNum*512 + num] = -1;
+  num = num + 2;
+endwhile;
+
+num = 0;
+while(num < 10) do
+  [DISK_MAP_TABLE + newPID*10 + num] = -1;
+  num = num + 1;
+endwhile;
+
+num = 4;
+while(num < 8) do
+  [DISK_MAP_TABLE + newPID*10 + num] = [INODE_TABLE + 16*inodeIndex + num + 4];
+  num = num + 1;
+endwhile;
+
+[[PAGE_TABLE_BASE + 20*newPID + 16]*512] = [[PAGE_TABLE_BASE + 20*newPID + 8]*512 + 1];
+SP = 8*512;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+
+ireturn;

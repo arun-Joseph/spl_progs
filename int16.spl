@@ -1,0 +1,153 @@
+alias sysCallNo R0;
+sysCallNo = [[PTBR + 2*(SP - 5)/512]*512 + (SP - 5)%512];
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = sysCallNo;
+[[PTBR + 2*(SP - 1)/512]*512 + (SP - 1)%512] = 0;
+
+alias userName R1;
+userName = [[PTBR + 2*(SP - 4)/512]*512 + (SP - 4)%512];
+
+alias password R2;
+password = [[PTBR + 2*(SP - 3)/512]*512 + (SP - 3)%512];
+
+alias retAddr R10;
+retAddr = [PTBR + 2*(SP - 1)/512]*512 + (SP - 1)%512;
+
+if(sysCallNo == 22) then          //Newusr
+  if([SYSTEM_STATUS_TABLE] != 1 || [SYSTEM_STATUS_TABLE + 1] != 2) then
+    [retAddr] = -2;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  alias userIndex R3;
+  userIndex = 0;
+  while(userIndex < 16) do
+    if([USER_TABLE + 2*userIndex] == userName) then
+      [retAddr] = -1;
+      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+      ireturn;
+    endif;
+    userIndex = userIndex + 1;
+  endwhile;
+
+  userIndex = 0;
+  while(userIndex < 16) do
+    if([USER_TABLE + 2*userIndex] == -1) then
+      break;
+    endif;
+    userIndex = userIndex + 1;
+  endwhile;
+
+  if(userIndex == 16) then
+    [retAddr] = -3;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  encrypt password;
+  [USER_TABLE + 2*userIndex] = userName;
+  [USER_TABLE + 2*userIndex + 1] = password;
+endif;
+
+if(sysCallNo == 23) then          //Remusr
+  if([SYSTEM_STATUS_TABLE] != 1 || [SYSTEM_STATUS_TABLE + 1] != 2
+    || userName == "root" || userName == "kernel") then
+    [retAddr] = -2;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  alias userIndex R2;
+  userIndex = 0;
+  while(userIndex < 16) do
+    if([USER_TABLE + 2*userIndex] == userName) then
+      break;
+    endif;
+    userIndex = userIndex + 1;
+  endwhile;
+
+  if(userIndex == 16) then
+    [retAddr] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  alias fileIndex R3;
+  fileIndex = 0;
+  while(fileIndex < 60) do
+    if([ROOT_FILE + fileIndex*8 + 3] == userName) then
+      [retAddr] = -1;
+      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+      ireturn;
+    endif;
+    fileIndex = fileIndex + 1;
+  endwhile;
+
+  [USER_TABLE + 2*userIndex] = -1;
+  [USER_TABLE + 2*userIndex + 1] = -1;
+endif;
+
+if(sysCallNo == 24) then          //Setpwd
+  if([SYSTEM_STATUS_TABLE + 1] != 2) then
+    [retAddr] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  alias userIndex R3;
+  userIndex = 0;
+  while(userIndex < 16) do
+    if([USER_TABLE + 2*userIndex] == userName) then
+      break;
+    endif;
+    userIndex = userIndex + 1;
+  endwhile;
+
+  if(userIndex == 16) then
+    [retAddr] = -2;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  if([SYSTEM_STATUS_TABLE] != userIndex && [SYSTEM_STATUS_TABLE] != 1) then
+    [retAddr] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  encrypt password;
+  [USER_TABLE + 2*userIndex + 1] = password;
+endif;
+
+if(sysCallNo == 25) then          //Getuname
+  if(userName < 0 || userName >= 16 || [USER_TABLE + 2*userName] == -1) then
+    [retAddr] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  [retAddr] = [USER_TABLE + 2*userName];
+endif;
+
+if(sysCallNo == 26) then          //Getuid
+  alias userIndex R2;
+  userIndex = 0;
+  while(userIndex < 16) do
+    if([USER_TABLE + 2*userIndex] == userName) then
+      break;
+    endif;
+    userIndex = userIndex + 1;
+  endwhile;
+
+  if(userIndex == 16) then
+    [retAddr] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  [retAddr] = userIndex;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+ireturn;

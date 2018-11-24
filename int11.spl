@@ -1,0 +1,80 @@
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias sysCallNo R1;
+sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
+
+if(sysCallNo == 11) then          //Getpid
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 11;
+
+  alias physicalAddrRetVal R2;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 1];
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+endif;
+
+if(sysCallNo == 12) then          //Getppid
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 12;
+
+  alias physicalAddrRetVal R2;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 2];
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+endif;
+
+if(sysCallNo == 13) then          //Wait
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 13;
+
+  alias waitPID R2;
+  waitPID = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+
+  if(waitPID < 0 || waitPID >=16 || waitPID == [SYSTEM_STATUS_TABLE + 1] || [PROCESS_TABLE + waitPID*16 + 4] == TERMINATED) then
+    alias physicalAddrRetVal R3;
+    physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+    [physicalAddrRetVal] = -1;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_PROCESS;
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 5] = waitPID;
+
+  multipush(R0, R1, R2);
+  call MOD_5;
+  multipop(R0, R1, R2);
+
+  alias physicalAddrRetVal R3;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = 0;
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+endif;
+
+if(sysCallNo == 14) then          //Signal
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 14;
+
+  alias counter R2;
+  counter = 0;
+  while(counter < 16) do
+    if([PROCESS_TABLE + counter*16 + 4] == WAIT_PROCESS && [PROCESS_TABLE + counter*16 + 5] == [SYSTEM_STATUS_TABLE + 1]) then
+      [PROCESS_TABLE + counter*16 + 4] = READY;
+    endif;
+    counter = counter + 1;
+  endwhile;
+
+  alias physicalAddrRetVal R3;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = 0;
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+endif;
+
+SP = userSP;
+ireturn;

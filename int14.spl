@@ -1,0 +1,99 @@
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias sysCallNo R1;
+sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
+
+if(sysCallNo == 19) then          //SemLock
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 19;
+
+  alias userAreaPage R5;
+  userAreaPage = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+
+  alias semDesc R6;
+  semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+  if(semDesc < 0 || semDesc >= 8 || [userAreaPage*512 + 496 + 2*semDesc] != SEMAPHORE) then
+    alias physicalAddrRetVal R7;
+    physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+    [physicalAddrRetVal] = -1;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  alias semIndex R7;
+  semIndex = [userAreaPage*512 + 496 + 2*semDesc + 1];
+  while([SEMAPHORE_TABLE + semIndex*4] != -1 && [SEMAPHORE_TABLE + semIndex*4] != [SYSTEM_STATUS_TABLE + 1]) do
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_SEMAPHORE;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 5] = semIndex;
+
+    multipush(R0, R1, R5, R6, R7);
+    call MOD_5;
+    multipop(R0, R1, R5, R6, R7);
+  endwhile;
+
+  [SEMAPHORE_TABLE + semIndex*4] = [SYSTEM_STATUS_TABLE + 1];
+
+  alias physicalAddrRetVal R8;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = 0;
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+endif;
+
+if(sysCallNo == 20) then          //SemUnlock
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 20;
+
+  alias userAreaPage R5;
+  userAreaPage = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+
+  alias semDesc R6;
+  semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+  if(semDesc < 0 || semDesc >= 8 || [userAreaPage*512 + 496 + 2*semDesc] != SEMAPHORE) then
+    alias physicalAddrRetVal R7;
+    physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+    [physicalAddrRetVal] = -1;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  alias semIndex R7;
+  semIndex = [userAreaPage*512 + 496 + 2*semDesc + 1];
+  if([SEMAPHORE_TABLE + semIndex*4] != -1) then
+    if([SEMAPHORE_TABLE + semIndex*4] != [SYSTEM_STATUS_TABLE + 1]) then
+      alias physicalAddrRetVal R8;
+      physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+      [physicalAddrRetVal] = -2;
+
+      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+      SP = userSP;
+      ireturn;
+    endif;
+
+    [SEMAPHORE_TABLE + semIndex*4] = -1;
+
+    alias counter R8;
+    counter = 0;
+    while(counter < 16) do
+      if([PROCESS_TABLE + counter*16 + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + counter*16 + 5] == semIndex) then
+        [PROCESS_TABLE + counter*16 + 4] = READY;
+      endif;
+      counter = counter + 1;
+    endwhile;
+  endif;
+
+  alias physicalAddrRetVal R7;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+  [physicalAddrRetVal] = 0;
+
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+endif;
+
+SP = userSP;
+ireturn;

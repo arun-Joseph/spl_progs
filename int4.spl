@@ -1,0 +1,185 @@
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias sysCallNo R1;
+sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
+
+if(sysCallNo == 1) then         //Create
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 1;
+
+  alias fileName R2;
+  fileName = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+
+  alias permission R3;
+  permission = [[PTBR + 2*(userSP - 3)/512]*512 + (userSP - 3)%512];
+
+  alias physicalAddrRetVal R4;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+
+  alias inodeIndex R5;
+  inodeIndex = 0;
+  while(inodeIndex < 60) do
+    if([INODE_TABLE + inodeIndex*16 + 1] == fileName) then
+      break;
+    endif;
+    inodeIndex = inodeIndex + 1;
+    endwhile;
+
+  if(inodeIndex != 60) then
+    [physicalAddrRetVal] = 0;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  inodeIndex = 0;
+  while(inodeIndex < 60) do
+    if([INODE_TABLE + inodeIndex*16 + 1] == -1) then
+      break;
+    endif;
+    inodeIndex = inodeIndex + 1;
+  endwhile;
+
+  if(inodeIndex == 60) then
+    [physicalAddrRetVal] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  alias loc R6;
+  loc = INODE_TABLE + inodeIndex*16;
+  [loc] = DATA;
+  [loc + 1] = fileName;
+  [loc + 2] = 0;
+  [loc + 3] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 3];
+  [loc + 4] = permission;
+
+  alias counter R7;
+  counter = 8;
+  while(counter < 12) do
+    [loc + counter] = -1;
+    counter = counter + 1;
+  endwhile;
+
+  loc = ROOT_FILE + inodeIndex*8;
+  [loc] = fileName;
+  [loc + 1] = 0;
+  [loc + 2] = DATA;
+  [loc + 3] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 3];
+  [loc + 4] = permission;
+
+  [physicalAddrRetVal] = 0;
+endif;
+
+if(sysCallNo == 4) then         //Delete
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 4;
+
+  alias fileName R2;
+  fileName = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+
+  alias physicalAddrRetVal R3;
+  physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+
+  alias flag R10;
+  flag = 0;
+
+  alias inodeIndex R4;
+  inodeIndex = 0;
+
+  while(inodeIndex < 60) do
+    if([INODE_TABLE + inodeIndex*16 + 1] == fileName) then
+      break;
+    endif;
+    inodeIndex = inodeIndex + 1;
+  endwhile;
+
+  if(inodeIndex == 60) then
+    [physicalAddrRetVal] = 0;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  if([INODE_TABLE + inodeIndex*16] != DATA) then
+    flag = 1;
+  endif;
+
+  if ([INODE_TABLE + inodeIndex*16 + 4] == EXCLUSIVE && [INODE_TABLE + inodeIndex*16 + 3] != 1
+      && [INODE_TABLE + inodeIndex*16 + 3] != [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 3]) then
+    flag = 1;
+  endif;
+
+  if(flag == 1) then
+    [physicalAddrRetVal] = -1;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  multipush(R0, R1, R2, R3, R4);
+  R1 = 4;
+  R2 = inodeIndex;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R0, R1, R2, R3, R4);
+
+  if([FILE_STATUS_TABLE + inodeIndex*4 + 1] != -1) then
+    [physicalAddrRetVal] = -2;
+  else
+    alias counter R5;
+    counter = 8;
+    while(counter < 12) do
+      alias disk R6;
+      disk = [INODE_TABLE + inodeIndex*16 + counter];
+
+      if(disk == -1) then
+        counter = counter + 1;
+        continue;
+      endif;
+
+      if([BUFFER_TABLE + (disk%4)*4] == disk && [BUFFER_TABLE + (disk%4)*4 + 1] == 1) then
+        [BUFFER_TABLE + (disk%4)*4 + 1] = 0;
+      endif;
+
+      backup;
+      R1 = 4;
+      R2 = disk;
+      R3 = [SYSTEM_STATUS_TABLE + 1];
+      call MOD_2;
+      restore;
+
+      counter = counter + 1;
+    endwhile;
+
+    counter = 0;
+    while(counter < 16) do
+      [INODE_TABLE + inodeIndex*16 + counter] = -1;
+      counter = counter + 1;
+    endwhile;
+    [INODE_TABLE + inodeIndex*16 + 2] = 0;
+
+    counter = 0;
+    while(counter < 8) do
+      [ROOT_FILE + inodeIndex*8 + counter] = -1;
+      counter = counter + 1;
+    endwhile;
+    [ROOT_FILE + inodeIndex*8 + 1] = 0;
+
+    [physicalAddrRetVal] = 0;
+  endif;
+
+  multipush(R0, R1, R2, R3, R4);
+  R1 = 5;
+  R2 = inodeIndex;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  multipop(R0, R1, R2, R3, R4);
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = userSP;
+ireturn;

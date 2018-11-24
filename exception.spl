@@ -1,0 +1,78 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = -1;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+backup;
+multipush(EIP);
+
+if(EC != 0 || [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] == (PTLR*512 - 1)) then
+  breakpoint;
+  print "Exception:";
+  if(EC == 0) then
+    print "Stack overflow";
+  endif;
+  if(EC == 1) then
+    print "Illegal INSTR";
+  endif;
+  if(EC == 2) then
+    print "Illegal MA";
+  endif;
+  if(EC == 3) then
+    print "Arithmetic EX";
+  endif;
+  print EIP;
+  print EPN;
+  print EMA;
+
+  R1 = 3;
+  R2 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_1;
+
+  call MOD_5;
+endif;
+
+alias currentPID R5;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+alias pageNum R9;
+pageNum = EPN;
+
+if(pageNum >= 4 && pageNum < 8) then
+  alias block R6;
+  alias page R7;
+  block = [DISK_MAP_TABLE + currentPID*10 + pageNum];
+
+  multipush(R5, R6, R9);
+  R1 = 5;
+  R2 = block;
+  call MOD_2;
+  page = R0;
+  multipop(R5, R6, R9);
+
+  [PTBR + 2*pageNum] = page;
+  [PTBR + 2*pageNum + 1] = "1100";
+else
+  alias page R6;
+  multipush(R5, R9);
+  R1 = 1;
+  call MOD_2;
+  page = R0;
+  multipop(R5, R9);
+  [PTBR + 4] = page;
+  [PTBR + 5] = "1110";
+
+  multipush(R5, R9);
+  R1 = 1;
+  call MOD_2;
+  page = R0;
+  multipop(R5, R9);
+  [PTBR + 6] = page;
+  [PTBR + 7] = "1110";
+endif;
+
+multipop(EIP);
+restore;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+SP = SP + 1;
+[[PAGE_TABLE_BASE + [SYSTEM_STATUS_TABLE + 1]*20 + 2*(SP/512)]*512 + SP%512] = EIP;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+ireturn;

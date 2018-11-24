@@ -1,0 +1,45 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+backup;
+
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+alias process_table_entry R1;
+process_table_entry = PROCESS_TABLE + currentPID*16;
+
+if(currentPID != 0) then
+  if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+    multipush(R0, R1);
+    R1 = 1;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_6;
+    multipop(R0, R1);
+  else
+    if([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
+      multipush(R0, R1);
+      R1 = 2;
+      R2 = [SYSTEM_STATUS_TABLE + 1];
+      call MOD_6;
+      multipop(R0, R1);
+    endif;
+  endif;
+endif;
+
+[process_table_entry + 4] = READY;
+
+alias counter R2;
+counter = 0;
+while(counter < 16) do
+  if([PROCESS_TABLE + counter*16 + 4] != TERMINATED) then
+    [PROCESS_TABLE + counter*16] = [PROCESS_TABLE + counter*16] + 1;
+  endif;
+  counter = counter + 1;
+endwhile;
+
+call MOD_5;
+
+restore;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+ireturn;

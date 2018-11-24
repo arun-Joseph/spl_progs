@@ -1,0 +1,176 @@
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias sysCallNo R1;
+sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
+
+alias physicalAddrRetVal R12;
+physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+
+if(sysCallNo == 2) then         //Open
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 2;
+
+  alias fileName R2;
+  fileName = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+
+  alias userAreaPageNum R3;
+  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+
+  alias fileDesc R4;
+  fileDesc = 0;
+  while(fileDesc < 8) do
+    if([userAreaPageNum*512 + 496 + 2*fileDesc] == -1) then
+      break;
+    endif;
+    fileDesc = fileDesc + 1;
+  endwhile;
+
+  if(fileDesc == 8) then
+    alias physicalAddrRetVal R5;
+    physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+    [physicalAddrRetVal] = -3;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  alias fileIndex R5;
+  multipush(R0, R1, R2, R3, R4, R12);
+  R1 = 3;
+  R2 = fileName;
+  call MOD_3;
+  fileIndex = R0;
+  multipop(R0, R1, R2, R3, R4, R12);
+
+  if(fileIndex < 0) then
+    [physicalAddrRetVal] = fileIndex;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  [userAreaPageNum*512 + 496 + 2*fileDesc] = FILE;
+  [userAreaPageNum*512 + 496 + 2*fileDesc + 1] = fileIndex;
+
+  [physicalAddrRetVal] = fileDesc;
+endif;
+
+if(sysCallNo == 3) then         //Close
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 3;
+
+  alias fileDesc R2;
+  fileDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+
+  alias userAreaPageNum R3;
+  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+
+  if(fileDesc < 0 || fileDesc >=8 || [userAreaPageNum*512 + 496 + 2*fileDesc] != FILE) then
+    alias physicalAddrRetVal R4;
+    physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
+    [physicalAddrRetVal] = -1;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  alias fileIndex R4;
+  fileIndex = [userAreaPageNum*512 + 496 + 2*fileDesc + 1];
+
+  backup;
+  R1 = 4;
+  R2 = fileIndex;
+  call MOD_3;
+  restore;
+
+  [userAreaPageNum*512 + 496 + 2*fileDesc] = -1;
+  [physicalAddrRetVal] = 0;
+endif;
+
+if(sysCallNo == 6) then         //Seek
+  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 6;
+
+  alias fileDesc R2;
+  fileDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
+
+  alias offset R3;
+  offset = [[PTBR + 2*(userSP - 3)/512]*512 + (userSP - 3)%512];
+
+  alias userAreaPageNum R4;
+  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+
+  if(fileDesc < 0 || fileDesc >=8 || [userAreaPageNum*512 + 496 + 2*fileDesc] != FILE) then
+    [physicalAddrRetVal] = -1;
+
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    SP = userSP;
+    ireturn;
+  endif;
+
+  alias fileIndex R5;
+  fileIndex = [userAreaPageNum*512 + 496 + 2*fileDesc + 1];
+
+  alias inodeIndex R6;
+  inodeIndex = [OPEN_FILE_TABLE + fileIndex*4];
+
+  multipush(R0, R1, R2, R3, R4, R5, R6, R12);
+  R1 = 4;
+  R2 = inodeIndex;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  if(R0 == -1) then
+    multipop(R12);
+    [physicalAddrRetVal] = -1;
+
+    SP = userSP;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+  multipop(R0, R1, R2, R3, R4, R5, R6, R12);
+
+  alias Lseek R7;
+  Lseek = [OPEN_FILE_TABLE + fileIndex*4 + 2];
+
+  if((Lseek + offset) < 0) then
+    backup;
+    R1 = 5;
+    R2 = inodeIndex;
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_0;
+    restore;
+
+    [physicalAddrRetVal] = -2;
+
+    SP = userSP;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    ireturn;
+  endif;
+
+  if(offset == 0) then
+    [OPEN_FILE_TABLE + fileIndex*4 + 2] = 0;
+  else
+    if((Lseek + offset) > [INODE_TABLE + inodeIndex*16 + 2]) then
+      [OPEN_FILE_TABLE + fileIndex*4 + 2] = [INODE_TABLE + inodeIndex*16 + 2];
+    else
+      [OPEN_FILE_TABLE + fileIndex*4 + 2] = Lseek + offset;
+    endif;
+  endif;
+
+  backup;
+  R1 = 5;
+  R2 = inodeIndex;
+  R3 = [SYSTEM_STATUS_TABLE + 1];
+  call MOD_0;
+  restore;
+
+  [physicalAddrRetVal] = 0;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = userSP;
+ireturn;
