@@ -16,7 +16,19 @@ if(currentPID != 0) then
     call MOD_6;
     multipop(R0, R1);
   else
-    if([SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
+    alias counter R2;
+    counter = 3;
+
+    while(counter < 15) do
+      if([PROCESS_TABLE + counter*16 + 4] == READY
+        && [PROCESS_TABLE + counter*16 + 6] == 1
+        && [PROCESS_TABLE + counter*16] > 1000) then
+        break;
+      endif;
+      counter = counter + 1;
+    endwhile;
+
+    if(counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
       multipush(R0, R1);
       R1 = 2;
       R2 = [SYSTEM_STATUS_TABLE + 1];

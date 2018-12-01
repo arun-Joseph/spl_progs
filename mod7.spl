@@ -146,7 +146,7 @@ endwhile;
 
 //Process Table
 counter = 3;
-while(counter < 16) do
+while(counter < 15) do
   [PROCESS_TABLE + counter*16] = 0;
   [PROCESS_TABLE + counter*16 + 4] = TERMINATED;
   counter = counter + 1;
@@ -169,7 +169,7 @@ endwhile;
 
 //Memory Free List
 counter = 0;
-while(counter < 81) do
+while(counter < 83) do
   [MEMORY_FREE_LIST + counter] = 1;
   counter = counter + 1;
 endwhile;
@@ -190,7 +190,7 @@ endwhile;
 [DISK_STATUS_TABLE] = 0;
 
 //System Status Table
-[SYSTEM_STATUS_TABLE + 2] = 47;
+[SYSTEM_STATUS_TABLE + 2] = 45;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 [SYSTEM_STATUS_TABLE + 4] = 0;
 [SYSTEM_STATUS_TABLE + 5] = -1;

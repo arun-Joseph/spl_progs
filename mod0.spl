@@ -142,7 +142,7 @@ if(functionNum == 9) then         //Release Terminal
   [TERMINAL_STATUS_TABLE] = 0;
 
   alias counter R3;
-  counter = 1;
+  counter = 0;
   while(counter < 16) do
     if([PROCESS_TABLE + counter*16 + 4] == WAIT_TERMINAL) then
       [PROCESS_TABLE + counter*16 + 4] = READY;

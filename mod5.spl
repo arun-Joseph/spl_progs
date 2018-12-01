@@ -23,6 +23,12 @@ else
       counter = 1;
       continue;
     endif;
+
+    if(counter == 15) then
+      counter = 0;
+      continue;
+    endif;
+
     if(([PROCESS_TABLE + counter*16 + 4] == READY || [PROCESS_TABLE + counter*16 + 4] == CREATED)
       && [PROCESS_TABLE + counter*16 + 6] == 0) then
       break;
@@ -31,10 +37,15 @@ else
   endwhile;
 
   if(counter == currentPID) then
-    if([PROCESS_TABLE + counter*16 + 4] == READY || [PROCESS_TABLE + counter*16 + 4] == CREATED) then
-      newPID = counter;
+    if(currentPID == 0 &&
+      ([PROCESS_TABLE + 15*16 + 4] == READY || [PROCESS_TABLE + 15*16 + 4] == CREATED)) then
+      newPID = 15;
     else
-      newPID = 0;
+      if([PROCESS_TABLE + counter*16 + 4] == READY || [PROCESS_TABLE + counter*16 + 4] == CREATED) then
+        newPID = counter;
+      else
+        newPID = 0;
+      endif;
     endif;
   else
     newPID = counter;

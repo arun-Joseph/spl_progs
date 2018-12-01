@@ -169,7 +169,7 @@ if(functionNum == 5) then         //Kill All
   multipop(R1, R2);
 
   counter = 2;
-  while(counter < 16) do
+  while(counter < 15) do
     if(counter != R2 && [PROCESS_TABLE + counter*16 + 4] != TERMINATED) then
       multipush(R1, R2, R5);
       R1 = 3;

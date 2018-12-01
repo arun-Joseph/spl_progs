@@ -15,7 +15,7 @@ if(functionNum == 1) then         //Swap Out
   p1 = 0;
   p2 = -1;
   swapPID = 3;
-  while(swapPID < 16) do
+  while(swapPID < 15) do
     state = [PROCESS_TABLE + swapPID*16 + 4];
     mode = [PROCESS_TABLE + swapPID*16 + 9];
 
@@ -27,7 +27,7 @@ if(functionNum == 1) then         //Swap Out
     if(state == WAIT_PROCESS) then
       break;
     else
-      if(p1 == 0 && state == WAIT_TERMINAL) then
+      if(p1 == 0 && state == WAIT_SEMAPHORE) then
         p1 = swapPID;
       else
         if(state != RUNNING) then
@@ -44,7 +44,7 @@ if(functionNum == 1) then         //Swap Out
     swapPID = swapPID + 1;
   endwhile;
 
-  if(swapPID == 16) then
+  if(swapPID == 15) then
     if(p1 != 0) then
       swapPID = p1;
     else
@@ -60,11 +60,8 @@ if(functionNum == 1) then         //Swap Out
   [PROCESS_TABLE + swapPID*16] = 0;
 
   counter = 2;
-  while(counter < 11) do
+  while(counter < 10) do
     page = PAGE_TABLE_BASE + swapPID*20 + 2*counter;
-    if(counter == 10) then
-      page = PROCESS_TABLE + swapPID*16 + 11;
-    endif;
 
     if(counter >= 2 && counter < 4 && ([page] == -1 || [MEMORY_FREE_LIST + [page]] > 1)) then
       counter = counter + 1;
@@ -97,9 +94,7 @@ if(functionNum == 1) then         //Swap Out
       multipop(R1, R2, R3, R4, R5);
 
       [page] = -1;
-      if(counter < 10) then
-        [page + 1] = "0000";
-      endif;
+      [page + 1] = "0000";
     endif;
     counter = counter + 1;
   endwhile;
@@ -110,7 +105,7 @@ if(functionNum == 1) then         //Swap Out
 endif;
 
 if(functionNum == 2) then         //Swap In
-  if([SYSTEM_STATUS_TABLE + 3] != 0 || [SYSTEM_STATUS_TABLE + 4] == 0) then
+  if([SYSTEM_STATUS_TABLE + 4] == 0) then
     return;
   endif;
 
@@ -119,7 +114,7 @@ if(functionNum == 2) then         //Swap In
   alias p1 R10;
   p1 = -1;
   swapPID = 3;
-  while(swapPID < 16) do
+  while(swapPID < 15) do
     if([PROCESS_TABLE + swapPID*16 + 4] == READY && [PROCESS_TABLE + swapPID*16 + 6] == 1) then
       if(p1 == -1) then
         p1 = swapPID;
@@ -140,7 +135,7 @@ if(functionNum == 2) then         //Swap In
   [PROCESS_TABLE + swapPID*16] = 0;
 
   counter = 2;
-  while(counter < 11) do
+  while(counter < 10) do
     if(counter >=4 && counter < 8) then
       counter = counter + 1;
       continue;
@@ -149,10 +144,6 @@ if(functionNum == 2) then         //Swap In
     if(counter >=2 && counter < 4 && [DISK_MAP_TABLE + swapPID*10 + counter] == -1) then
       counter = counter + 1;
       continue;
-    endif;
-
-    if(counter == 10) then
-      counter = 0;
     endif;
 
     multipush(R1, R2, R3, R4);
@@ -170,18 +161,14 @@ if(functionNum == 2) then         //Swap In
     multipop(R1, R2, R3, R4, R5);
 
     multipush(R1, R2, R3, R4, R5);
+    R5 = R2;
     R1 = 4;
-    R3 = R2;
     R2 = [DISK_MAP_TABLE + swapPID*10 + counter];
+    R3 = R5;
     call MOD_2;
     multipop(R1, R2, R3, R4, R5);
 
     [DISK_MAP_TABLE + swapPID*10 + counter] = -1;
-
-    if(counter == 0) then
-      [PROCESS_TABLE + swapPID*16 + 11] = page;
-      break;
-    endif;
 
     [PAGE_TABLE_BASE + swapPID*20 + 2*counter] = page;
     [PAGE_TABLE_BASE + swapPID*20 + 2*counter + 1] = "0110";
