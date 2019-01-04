@@ -6,7 +6,6 @@ alias page R5;
 alias block R6;
 
 if(functionNum == 1) then         //Swap Out
-  [SYSTEM_STATUS_TABLE + 5] = currentPID;
 
   alias p1 R10;
   alias p2 R11;
@@ -51,7 +50,7 @@ if(functionNum == 1) then         //Swap Out
       if(p2 != -1) then
         swapPID = p2;
       else
-        [SYSTEM_STATUS_TABLE + 5] = -1;
+        [SYSTEM_STATUS_TABLE + 5] = 0;
         return;
       endif;
     endif;
@@ -101,15 +100,14 @@ if(functionNum == 1) then         //Swap Out
 
   [PROCESS_TABLE + swapPID*16 + 6] = 1;
   [SYSTEM_STATUS_TABLE + 4] = [SYSTEM_STATUS_TABLE + 4] + 1;
-  [SYSTEM_STATUS_TABLE + 5] = -1;
+  [SYSTEM_STATUS_TABLE + 5] = 0;
 endif;
 
 if(functionNum == 2) then         //Swap In
   if([SYSTEM_STATUS_TABLE + 4] == 0) then
+    [SYSTEM_STATUS_TABLE + 5] = 0;
     return;
   endif;
-
-  [SYSTEM_STATUS_TABLE + 5] = currentPID;
 
   alias p1 R10;
   p1 = -1;
@@ -128,7 +126,7 @@ if(functionNum == 2) then         //Swap In
 
   swapPID = p1;
   if(swapPID == -1) then
-    [SYSTEM_STATUS_TABLE + 5] = -1;
+    [SYSTEM_STATUS_TABLE + 5] = 0;
     return;
   endif;
 
@@ -141,7 +139,7 @@ if(functionNum == 2) then         //Swap In
       continue;
     endif;
 
-    if(counter >=2 && counter < 4 && [DISK_MAP_TABLE + swapPID*10 + counter] == -1) then
+    if(counter >= 2 && counter < 4 && [DISK_MAP_TABLE + swapPID*10 + counter] == -1) then
       counter = counter + 1;
       continue;
     endif;
@@ -177,7 +175,7 @@ if(functionNum == 2) then         //Swap In
 
   [PROCESS_TABLE + swapPID*16 + 6] = 0;
   [SYSTEM_STATUS_TABLE + 4] = [SYSTEM_STATUS_TABLE + 4] - 1;
-  [SYSTEM_STATUS_TABLE + 5] = -1;
+  [SYSTEM_STATUS_TABLE + 5] = 0;
 endif;
 
 return;

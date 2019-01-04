@@ -8,12 +8,13 @@ currentPID = [SYSTEM_STATUS_TABLE + 1];
 alias process_table_entry R1;
 process_table_entry = PROCESS_TABLE + currentPID*16;
 
-if(currentPID != 0) then
+if([SYSTEM_STATUS_TABLE + 1] != 15 && [SYSTEM_STATUS_TABLE + 5] == 0) then
   if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+    [SYSTEM_STATUS_TABLE + 5] = 1;
+
+    [process_table_entry + 4] = READY;
     multipush(R0, R1);
-    R1 = 1;
-    R2 = [SYSTEM_STATUS_TABLE + 1];
-    call MOD_6;
+    call MOD_5;
     multipop(R0, R1);
   else
     alias counter R2;
@@ -29,6 +30,23 @@ if(currentPID != 0) then
     endwhile;
 
     if(counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
+      [SYSTEM_STATUS_TABLE + 5] = 2;
+
+      [process_table_entry + 4] = READY;
+      multipush(R0, R1);
+      call MOD_5;
+      multipop(R0, R1);
+    endif;
+  endif;
+else
+  if([SYSTEM_STATUS_TABLE + 1] == 15 && [SYSTEM_STATUS_TABLE + 5] == 1) then
+    multipush(R0, R1);
+    R1 = 1;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call MOD_6;
+    multipop(R0, R1);
+  else
+    if([SYSTEM_STATUS_TABLE + 1] == 15 && [SYSTEM_STATUS_TABLE + 5] == 2) then
       multipush(R0, R1);
       R1 = 2;
       R2 = [SYSTEM_STATUS_TABLE + 1];

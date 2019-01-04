@@ -11,8 +11,8 @@ process_table_entry = PROCESS_TABLE + currentPID*16;
 
 alias counter R2;
 alias newPID R3;
-if([SYSTEM_STATUS_TABLE + 5] != -1) then
-  newPID = [SYSTEM_STATUS_TABLE + 5];
+if([SYSTEM_STATUS_TABLE + 5] != 0) then
+  newPID = 15;
   if([PROCESS_TABLE + newPID*16 + 4] == WAIT_DISK) then
     newPID = 0;
   endif;
@@ -37,15 +37,10 @@ else
   endwhile;
 
   if(counter == currentPID) then
-    if(currentPID == 0 &&
-      ([PROCESS_TABLE + 15*16 + 4] == READY || [PROCESS_TABLE + 15*16 + 4] == CREATED)) then
-      newPID = 15;
+    if([PROCESS_TABLE + counter*16 + 4] == READY || [PROCESS_TABLE + counter*16 + 4] == CREATED) then
+      newPID = counter;
     else
-      if([PROCESS_TABLE + counter*16 + 4] == READY || [PROCESS_TABLE + counter*16 + 4] == CREATED) then
-        newPID = counter;
-      else
-        newPID = 0;
-      endif;
+      newPID = 0;
     endif;
   else
     newPID = counter;
