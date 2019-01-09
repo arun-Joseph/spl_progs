@@ -8,9 +8,13 @@ currentPID = [SYSTEM_STATUS_TABLE + 1];
 alias process_table_entry R1;
 process_table_entry = PROCESS_TABLE + currentPID*16;
 
+alias flag R2;
+flag = 0;
+
 if([SYSTEM_STATUS_TABLE + 1] != 15 && [SYSTEM_STATUS_TABLE + 5] == 0) then
   if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
     [SYSTEM_STATUS_TABLE + 5] = 1;
+    flag = 1;
 
     [process_table_entry + 4] = READY;
     multipush(R0, R1);
@@ -31,6 +35,7 @@ if([SYSTEM_STATUS_TABLE + 1] != 15 && [SYSTEM_STATUS_TABLE + 5] == 0) then
 
     if(counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
       [SYSTEM_STATUS_TABLE + 5] = 2;
+      flag = 1;
 
       [process_table_entry + 4] = READY;
       multipush(R0, R1);
@@ -56,9 +61,7 @@ else
   endif;
 endif;
 
-[process_table_entry + 4] = READY;
-
-alias counter R2;
+alias counter R3;
 counter = 0;
 while(counter < 16) do
   if([PROCESS_TABLE + counter*16 + 4] != TERMINATED) then
@@ -67,7 +70,10 @@ while(counter < 16) do
   counter = counter + 1;
 endwhile;
 
-call MOD_5;
+if(flag == 0) then
+  [process_table_entry + 4] = READY;
+  call MOD_5;
+endif;
 
 restore;
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
