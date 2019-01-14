@@ -6,7 +6,6 @@ alias page R5;
 alias block R6;
 
 if(functionNum == 1) then         //Swap Out
-
   alias p1 R10;
   alias p2 R11;
   alias state R12;

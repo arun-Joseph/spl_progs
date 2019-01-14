@@ -8,42 +8,16 @@ currentPID = [SYSTEM_STATUS_TABLE + 1];
 alias process_table_entry R1;
 process_table_entry = PROCESS_TABLE + currentPID*16;
 
-alias flag R2;
-flag = 0;
-
-if([SYSTEM_STATUS_TABLE + 1] != 15 && [SYSTEM_STATUS_TABLE + 5] == 0) then
-  if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
-    [SYSTEM_STATUS_TABLE + 5] = 1;
-    flag = 1;
-
-    [process_table_entry + 4] = READY;
-    multipush(R0, R1);
-    call MOD_5;
-    multipop(R0, R1);
-  else
-    alias counter R2;
-    counter = 3;
-
-    while(counter < 15) do
-      if([PROCESS_TABLE + counter*16 + 4] == READY
-        && [PROCESS_TABLE + counter*16 + 6] == 1
-        && [PROCESS_TABLE + counter*16] > 1000) then
-        break;
-      endif;
-      counter = counter + 1;
-    endwhile;
-
-    if(counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH) then
-      [SYSTEM_STATUS_TABLE + 5] = 2;
-      flag = 1;
-
-      [process_table_entry + 4] = READY;
-      multipush(R0, R1);
-      call MOD_5;
-      multipop(R0, R1);
-    endif;
+alias counter R2;
+counter = 0;
+while(counter < 16) do
+  if([PROCESS_TABLE + counter*16 + 4] != TERMINATED) then
+    [PROCESS_TABLE + counter*16] = [PROCESS_TABLE + counter*16] + 1;
   endif;
-else
+  counter = counter + 1;
+endwhile;
+
+if([SYSTEM_STATUS_TABLE + 1] == 15 || [SYSTEM_STATUS_TABLE + 5] != 0) then
   if([SYSTEM_STATUS_TABLE + 1] == 15 && [SYSTEM_STATUS_TABLE + 5] == 1) then
     multipush(R0, R1);
     R1 = 1;
@@ -59,18 +33,30 @@ else
       multipop(R0, R1);
     endif;
   endif;
-endif;
 
-alias counter R3;
-counter = 0;
-while(counter < 16) do
-  if([PROCESS_TABLE + counter*16 + 4] != TERMINATED) then
-    [PROCESS_TABLE + counter*16] = [PROCESS_TABLE + counter*16] + 1;
+  [process_table_entry + 4] = READY;
+  call MOD_5;
+else
+  if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+    [SYSTEM_STATUS_TABLE + 5] = 1;
+  else
+    alias counter R2;
+    counter = 3;
+
+    while(counter < 15) do
+      if([PROCESS_TABLE + counter*16 + 4] == READY
+        && [PROCESS_TABLE + counter*16 + 6] == 1
+        && [PROCESS_TABLE + counter*16] > MAX_TICK) then
+        break;
+      endif;
+      counter = counter + 1;
+    endwhile;
+
+    if([SYSTEM_STATUS_TABLE + 4] != 0 && (counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH)) then
+      [SYSTEM_STATUS_TABLE + 5] = 2;
+    endif;
   endif;
-  counter = counter + 1;
-endwhile;
 
-if(flag == 0) then
   [process_table_entry + 4] = READY;
   call MOD_5;
 endif;
