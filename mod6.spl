@@ -103,11 +103,6 @@ if(functionNum == 1) then         //Swap Out
 endif;
 
 if(functionNum == 2) then         //Swap In
-  if([SYSTEM_STATUS_TABLE + 4] == 0) then
-    [SYSTEM_STATUS_TABLE + 5] = 0;
-    return;
-  endif;
-
   alias p1 R10;
   p1 = -1;
   swapPID = 3;
