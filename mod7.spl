@@ -164,7 +164,7 @@ counter = 0;
 while(counter < 32) do
   [SEMAPHORE_TABLE + counter*4] = -1;
   [SEMAPHORE_TABLE + counter*4 + 1] = 0;
-  counter = counter + 2;
+  counter = counter + 1;
 endwhile;
 
 //Memory Free List
