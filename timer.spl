@@ -8,8 +8,6 @@ currentPID = [SYSTEM_STATUS_TABLE + 1];
 alias process_table_entry R1;
 process_table_entry = PROCESS_TABLE + currentPID*16;
 
-
-
 if([SYSTEM_STATUS_TABLE + 5] != 0) then
   if([SYSTEM_STATUS_TABLE + 1] == 15 && [SYSTEM_STATUS_TABLE + 5] == 1) then
     multipush(R0, R1);
