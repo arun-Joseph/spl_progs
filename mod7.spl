@@ -1,55 +1,11 @@
-loadi(2, 15);
-loadi(3, 16);
-loadi(4, 17);
-loadi(5, 18);
-loadi(6, 19);
-loadi(7, 20);
-loadi(8, 21);
-loadi(9, 22);
-loadi(10, 23);
-loadi(11, 24);
-loadi(12, 25);
-loadi(13, 26);
-loadi(14, 27);
-loadi(15, 28);
-loadi(16, 29);
-loadi(17, 30);
-loadi(18, 31);
-loadi(19, 32);
-loadi(20, 33);
-loadi(21, 34);
-loadi(22, 35);
-loadi(23, 36);
-loadi(24, 37);
-loadi(25, 38);
-loadi(26, 39);
-loadi(27, 40);
-loadi(28, 41);
-loadi(29, 42);
-loadi(30, 43);
-loadi(31, 44);
-loadi(32, 45);
-loadi(33, 46);
-loadi(34, 47);
-loadi(35, 48);
-loadi(36, 49);
-loadi(37, 50);
-loadi(38, 51);
-loadi(39, 52);
-loadi(40, 53);
-loadi(41, 54);
-loadi(42, 55);
-loadi(43, 56);
-loadi(44, 57);
-loadi(45, 58);
-loadi(46, 59);
-loadi(47, 60);
-loadi(48, 61);
-loadi(49, 62);
-loadi(50, 63);
-loadi(51, 64);
-loadi(52, 65);
-loadi(53, 66);
+alias counter R0;
+
+counter = 2;
+while(counter <= 53) do
+  loadi(counter, counter + 13);
+  counter = counter + 1;
+endwhile;
+
 loadi(59, 3);
 loadi(60, 4);
 loadi(61, 2);
@@ -60,8 +16,12 @@ loadi(65, 7);
 loadi(66, 8);
 loadi(67, 9);
 loadi(68, 10);
+loadi(128, 512);
+loadi(129, 513);
+loadi(132, 516);
+loadi(133, 517);
 
-//Init Program
+// Init Program
 PTBR = PAGE_TABLE_BASE;
 [PTBR + 20] = 63;
 [PTBR + 21] = "0100";
@@ -96,14 +56,13 @@ PTBR = PAGE_TABLE_BASE;
 
 [66*512] = [65*512 + 1];
 
-alias counter R0;
 counter = 496;
 while(counter < 512) do
   [77*512 + counter] = -1;
   counter = counter + 2;
 endwhile;
 
-//Shell Program
+// Shell Program
 [PTBR + 40] = 63;
 [PTBR + 41] = "0100";
 [PTBR + 42] = 64;
@@ -144,7 +103,7 @@ while(counter < 512) do
   counter = counter + 2;
 endwhile;
 
-//Process Table
+// Process Table
 counter = 3;
 while(counter < 15) do
   [PROCESS_TABLE + counter*16] = 0;
@@ -152,14 +111,14 @@ while(counter < 15) do
   counter = counter + 1;
 endwhile;
 
-//Open File Table
+// Open File Table
 counter = 0;
 while(counter < 32) do
   [OPEN_FILE_TABLE + counter*4] = -1;
   counter = counter + 1;
 endwhile;
 
-//Semaphore Table
+// Semaphore Table
 counter = 0;
 while(counter < 32) do
   [SEMAPHORE_TABLE + counter*4] = -1;
@@ -167,7 +126,7 @@ while(counter < 32) do
   counter = counter + 1;
 endwhile;
 
-//Memory Free List
+// Memory Free List
 counter = 0;
 while(counter < 83) do
   [MEMORY_FREE_LIST + counter] = 1;
@@ -178,7 +137,7 @@ while(counter < 128) do
   counter = counter + 1;
 endwhile;
 
-//File Status Table
+// File Status Table
 counter = 0;
 while(counter < 60) do
   [FILE_STATUS_TABLE + counter*4] = -1;
@@ -186,19 +145,26 @@ while(counter < 60) do
   counter = counter + 1;
 endwhile;
 
-//Disk Status Table
+// Disk Status Table
 [DISK_STATUS_TABLE] = 0;
 
-//System Status Table
+// System Status Table
 [SYSTEM_STATUS_TABLE + 2] = 45;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 [SYSTEM_STATUS_TABLE + 4] = 0;
 [SYSTEM_STATUS_TABLE + 5] = 0;
 
-//Terminal Status Table
+// Terminal Status Table
 [TERMINAL_STATUS_TABLE] = 0;
 
-//Buffer Table
+// Access Lock Table
+counter = 0;
+while(counter < 18) do
+  [ACCESS_LOCK_TABLE + counter] = 0;
+  counter = counter + 1;
+endwhile;
+
+// Buffer Table
 counter = 0;
 while(counter < 4) do
   [BUFFER_TABLE + counter*4] = -1;
@@ -207,7 +173,7 @@ while(counter < 4) do
   counter = counter + 1;
 endwhile;
 
-//Disk Map Table
+// Disk Map Table
 counter = 0;
 while(counter < 10) do
   [DISK_MAP_TABLE + 20 + counter] = -1;

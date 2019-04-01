@@ -6,7 +6,7 @@ loadi(70, 12);
 SP = 82*512 - 1;
 call MOD_7;
 
-//Idle Program
+// Idle Program
 PTBR = PAGE_TABLE_BASE;
 [PTBR + 0] = -1;
 [PTBR + 1] = "0000";
@@ -40,7 +40,7 @@ PTBR = PAGE_TABLE_BASE;
 
 [70*512] = [69*512 + 1];
 
-//Swapper Daemon
+// Swapper Daemon
 PTBR = PAGE_TABLE_BASE + 20*15;
 [PTBR + 0] = -1;
 [PTBR + 1] = "0000";
@@ -80,6 +80,7 @@ process_table_entry = PROCESS_TABLE + 16*15;
 
 PTBR = PAGE_TABLE_BASE;
 PTLR = 10;
-
 SP = 8*512;
+
+start;
 ireturn;
