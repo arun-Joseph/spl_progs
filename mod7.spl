@@ -153,6 +153,7 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 [SYSTEM_STATUS_TABLE + 4] = 0;
 [SYSTEM_STATUS_TABLE + 5] = 0;
+[SYSTEM_STATUS_TABLE + 6] = 0;
 
 // Terminal Status Table
 [TERMINAL_STATUS_TABLE] = 0;

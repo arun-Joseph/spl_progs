@@ -1,5 +1,9 @@
+R1 = 1;
+R2 = SCHEDULER_LOCK;
+call MOD_8;
+
 alias currentPID R0;
-currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 multipush(BP);
 
 alias process_table_entry R1;
@@ -64,4 +68,9 @@ endif;
 
 [new_process_table + 4] = RUNNING;
 multipop(BP);
+
+R1 = 2;
+R2 = SCHEDULER_LOCK;
+call MOD_8;
+
 return;

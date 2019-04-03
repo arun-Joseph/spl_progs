@@ -1,13 +1,13 @@
 alias functionNum R1;
 alias LockID R2;
 
-if(functionNum == 1) then         //Access Lock
+if(functionNum == 1) then         //Acquire Lock
   while(tsl(LockID) == 1) do
     continue;
   endwhile;
 endif;
 
-if(functionNum == 2) then         //Access Unlock
+if(functionNum == 2) then         //Release Lock
   [LockID] = 0;
 endif;
 
