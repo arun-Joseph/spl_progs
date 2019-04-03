@@ -105,7 +105,7 @@ endwhile;
 
 // Process Table
 counter = 3;
-while(counter < 15) do
+while(counter < 14) do
   [PROCESS_TABLE + counter*16] = 0;
   [PROCESS_TABLE + counter*16 + 4] = TERMINATED;
   counter = counter + 1;
@@ -128,7 +128,7 @@ endwhile;
 
 // Memory Free List
 counter = 0;
-while(counter < 83) do
+while(counter < 85) do
   [MEMORY_FREE_LIST + counter] = 1;
   counter = counter + 1;
 endwhile;
@@ -153,14 +153,14 @@ endwhile;
 [SYSTEM_STATUS_TABLE + 3] = 0;
 [SYSTEM_STATUS_TABLE + 4] = 0;
 [SYSTEM_STATUS_TABLE + 5] = 0;
-[SYSTEM_STATUS_TABLE + 6] = 0;
+[SYSTEM_STATUS_TABLE + 6] = 14;
 
 // Terminal Status Table
 [TERMINAL_STATUS_TABLE] = 0;
 
 // Access Lock Table
 counter = 0;
-while(counter < 18) do
+while(counter < 3) do
   [ACCESS_LOCK_TABLE + counter] = 0;
   counter = counter + 1;
 endwhile;
