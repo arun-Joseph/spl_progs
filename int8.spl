@@ -1,10 +1,13 @@
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 8;
+alias currentPID R7;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
+[PROCESS_TABLE + currentPID*16 + 9] = 8;
 
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 alias val R10;
 
@@ -21,13 +24,11 @@ if (newPID == -1) then
   [physicalAddrRetVal] = -1;
 
   SP = userSP;
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
   ireturn;
 endif;
 
 alias page R6;
-alias currentPID R7;
-currentPID = [SYSTEM_STATUS_TABLE + 1];
 alias counter R8;
 counter = 4;
 while(counter < 8) do
@@ -145,5 +146,5 @@ physicalAddrRetVal = [[PROCESS_TABLE + newPID*16 + 14] + 2*(userSP - 1)/512]*512
 [physicalAddrRetVal] = 0;
 
 SP = userSP;
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+[PROCESS_TABLE + currentPID*16 + 9] = 0;
 ireturn;

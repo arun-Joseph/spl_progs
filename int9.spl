@@ -1,10 +1,13 @@
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 9;
+alias currentPID R11;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
+[PROCESS_TABLE + currentPID*16 + 9] = 9;
 
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 alias fileNamePhysicalAddr R1;
 alias fileName R2;
@@ -25,25 +28,25 @@ if(inodeIndex == 60) then
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -1;
 
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
   SP = userSP;
   ireturn;
 endif;
 
-multipush(R0, R1, R2, R3);
+backup;
 R1 = 3;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = currentPID;
 call MOD_1;
-multipop(R0, R1, R2, R3);
+restore;
 
 alias userAreaPageNum R4;
-userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+userAreaPageNum = [PROCESS_TABLE + currentPID*16 + 11];
 [MEMORY_FREE_LIST + userAreaPageNum] = [MEMORY_FREE_LIST + userAreaPageNum] + 1;
 [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
 
 alias newPID R5;
 SP = userAreaPageNum*512 - 1;
-newPID = [SYSTEM_STATUS_TABLE + 1];
+newPID = currentPID;
 [PROCESS_TABLE + newPID*16 + 4] = RUNNING;
 [PROCESS_TABLE + newPID*16 + 7] = inodeIndex;
 
@@ -112,6 +115,6 @@ endwhile;
 
 [[PAGE_TABLE_BASE + 20*newPID + 16]*512] = [[PAGE_TABLE_BASE + 20*newPID + 8]*512 + 1];
 SP = 8*512;
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+[PROCESS_TABLE + currentPID*16 + 9] = 0;
 
 ireturn;

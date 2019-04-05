@@ -1,10 +1,13 @@
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 7;
+alias currentPID R11;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
+[PROCESS_TABLE + currentPID*16 + 9] = 7;
 
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 alias physicalPageNum R1;
 alias offset R2;
@@ -17,7 +20,7 @@ fileDesc = [fileDescPhysicalAddr];
 
 if(fileDesc != -1) then
   alias userAreaPageNum R5;
-  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+  userAreaPageNum = [PROCESS_TABLE + currentPID*16 + 11];
 
   if(fileDesc < 0 || fileDesc >= 8 || [userAreaPageNum*512 + 496 + 2*fileDesc] != FILE) then
     alias physicalAddrRetVal R5;
@@ -25,7 +28,7 @@ if(fileDesc != -1) then
     [physicalAddrRetVal] = -1;
 
     SP = userSP;
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     ireturn;
   endif;
 
@@ -35,23 +38,23 @@ if(fileDesc != -1) then
   alias inodeIndex R7;
   inodeIndex = [OPEN_FILE_TABLE + fileIndex*4];
 
-  multipush(R4, R5, R6, R7, R0);
+  backup;
   R1 = 4;
   R2 = inodeIndex;
-  R3 = [SYSTEM_STATUS_TABLE + 1];
+  R3 = currentPID;
   call MOD_0;
   if(R0 == -1) then
-    multipop(R0);
+    restore;
 
     alias physicalAddrRetVal R8;
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
     SP = userSP;
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     ireturn;
   endif;
-  multipop(R4, R5, R6, R7, R0);
+  restore;
 
   alias Lseek R8;
   Lseek = [OPEN_FILE_TABLE + fileIndex*4 + 2];
@@ -61,19 +64,19 @@ if(fileDesc != -1) then
 
   if([OPEN_FILE_TABLE + fileIndex*4] == INODE_ROOT) then
     if(Lseek == 480) then
-      multipush(R0, R4, R5, R6, R7, R8, R9);
+      restore;
       R1 = 5;
       R2 = inodeIndex;
-      R3 = [SYSTEM_STATUS_TABLE + 1];
+      R3 = currentPID;
       call MOD_0;
-      multipop(R0, R4, R5, R6, R7, R8, R9);
+      restore;
 
       alias physicalAddrRetVal R8;
       physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
       [physicalAddrRetVal] = -2;
 
       SP = userSP;
-      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+      [PROCESS_TABLE + currentPID*16 + 9] = 0;
       ireturn;
     endif;
 
@@ -83,49 +86,49 @@ if(fileDesc != -1) then
     fileSize = [INODE_TABLE + inodeIndex*16 + 2];
 
     if(Lseek == fileSize) then
-      multipush(R0, R4, R5, R6, R7, R8, R9);
+      backup;
       R1 = 5;
       R2 = inodeIndex;
-      R3 = [SYSTEM_STATUS_TABLE + 1];
+      R3 = currentPID;
       call MOD_0;
-      multipop(R0, R4, R5, R6, R7, R8, R9);
+      restore;
 
       alias physicalAddrRetVal R8;
       physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
       [physicalAddrRetVal] = -2;
 
       SP = userSP;
-      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+      [PROCESS_TABLE + currentPID*16 + 9] = 0;
       ireturn;
     endif;
 
-    multipush(R0, R4, R5, R6, R7, R8, R9, R10);
+    backup;
     R1 = 2;
     R2 = [INODE_TABLE + inodeIndex*16 + Lseek/512 + 8];
     R3 = Lseek%512;
     R4 = [PTBR + 2*(word/512)]*512 + word%512;
     call MOD_3;
-    multipop(R0, R4, R5, R6, R7, R8, R9, R10);
+    restore;
   endif;
 
   [OPEN_FILE_TABLE + fileIndex*4 + 2] = Lseek + 1;
 
-  multipush(R0, R4, R5, R6, R7, R8, R9);
+  backup;
   R1 = 5;
   R2 = inodeIndex;
-  R3 = [SYSTEM_STATUS_TABLE + 1];
+  R3 = currentPID;
   call MOD_0;
-  multipop(R0, R4, R5, R6, R7, R8, R9);
+  restore;
 else
   alias word R5;
   word = [[PTBR + 2*(userSP - 3)/512]*512 + (userSP - 3)%512];
 
-  multipush(R0, R1, R2, R3, R4, R5);
+  backup;
   R1 = 4;
-  R2 = [SYSTEM_STATUS_TABLE + 1];
+  R2 = currentPID;
   R3 = word;
   call MOD_4;
-  multipop(R0, R1, R2, R3, R4, R5);
+  restore;
 endif;
 
 alias physicalAddrRetVal R5;
@@ -133,5 +136,5 @@ physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
 [physicalAddrRetVal] = 0;
 
 SP = userSP;
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+[PROCESS_TABLE + currentPID*16 + 9] = 0;
 ireturn;

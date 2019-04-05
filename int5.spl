@@ -1,8 +1,11 @@
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+alias currentPID R11;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 alias sysCallNo R1;
 sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
@@ -11,13 +14,13 @@ alias physicalAddrRetVal R12;
 physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
 
 if(sysCallNo == 2) then         //Open
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 2;
+  [PROCESS_TABLE + currentPID*16 + 9] = 2;
 
   alias fileName R2;
   fileName = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
 
   alias userAreaPageNum R3;
-  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+  userAreaPageNum = [PROCESS_TABLE + currentPID*16 + 11];
 
   alias fileDesc R4;
   fileDesc = 0;
@@ -33,23 +36,23 @@ if(sysCallNo == 2) then         //Open
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -3;
 
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
 
   alias fileIndex R5;
-  multipush(R0, R1, R2, R3, R4, R12);
+  multipush(R0, R1, R2, R3, R4, R11, R12);
   R1 = 3;
   R2 = fileName;
   call MOD_3;
   fileIndex = R0;
-  multipop(R0, R1, R2, R3, R4, R12);
+  multipop(R0, R1, R2, R3, R4, R11, R12);
 
   if(fileIndex < 0) then
     [physicalAddrRetVal] = fileIndex;
 
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
@@ -61,20 +64,20 @@ if(sysCallNo == 2) then         //Open
 endif;
 
 if(sysCallNo == 3) then         //Close
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 3;
+  [PROCESS_TABLE + currentPID*16 + 9] = 3;
 
   alias fileDesc R2;
   fileDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
 
   alias userAreaPageNum R3;
-  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+  userAreaPageNum = [PROCESS_TABLE + currentPID*16 + 11];
 
   if(fileDesc < 0 || fileDesc >=8 || [userAreaPageNum*512 + 496 + 2*fileDesc] != FILE) then
     alias physicalAddrRetVal R4;
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
@@ -93,7 +96,7 @@ if(sysCallNo == 3) then         //Close
 endif;
 
 if(sysCallNo == 6) then         //Seek
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 6;
+  [PROCESS_TABLE + currentPID*16 + 9] = 6;
 
   alias fileDesc R2;
   fileDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
@@ -102,12 +105,12 @@ if(sysCallNo == 6) then         //Seek
   offset = [[PTBR + 2*(userSP - 3)/512]*512 + (userSP - 3)%512];
 
   alias userAreaPageNum R4;
-  userAreaPageNum = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+  userAreaPageNum = [PROCESS_TABLE + currentPID*16 + 11];
 
   if(fileDesc < 0 || fileDesc >=8 || [userAreaPageNum*512 + 496 + 2*fileDesc] != FILE) then
     [physicalAddrRetVal] = -1;
 
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
@@ -118,20 +121,20 @@ if(sysCallNo == 6) then         //Seek
   alias inodeIndex R6;
   inodeIndex = [OPEN_FILE_TABLE + fileIndex*4];
 
-  multipush(R0, R1, R2, R3, R4, R5, R6, R12);
+  backup;
   R1 = 4;
   R2 = inodeIndex;
-  R3 = [SYSTEM_STATUS_TABLE + 1];
+  R3 = currentPID;
   call MOD_0;
   if(R0 == -1) then
-    multipop(R12);
+    restore;
     [physicalAddrRetVal] = -1;
 
     SP = userSP;
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     ireturn;
   endif;
-  multipop(R0, R1, R2, R3, R4, R5, R6, R12);
+  restore;
 
   alias Lseek R7;
   Lseek = [OPEN_FILE_TABLE + fileIndex*4 + 2];
@@ -140,14 +143,14 @@ if(sysCallNo == 6) then         //Seek
     backup;
     R1 = 5;
     R2 = inodeIndex;
-    R3 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = currentPID;
     call MOD_0;
     restore;
 
     [physicalAddrRetVal] = -2;
 
     SP = userSP;
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     ireturn;
   endif;
 
@@ -164,13 +167,13 @@ if(sysCallNo == 6) then         //Seek
   backup;
   R1 = 5;
   R2 = inodeIndex;
-  R3 = [SYSTEM_STATUS_TABLE + 1];
+  R3 = currentPID;
   call MOD_0;
   restore;
 
   [physicalAddrRetVal] = 0;
 endif;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+[PROCESS_TABLE + currentPID*16 + 9] = 0;
 SP = userSP;
 ireturn;
