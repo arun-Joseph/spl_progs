@@ -27,7 +27,7 @@ if(EC != 0 || [PROCESS_TABLE + currentPID*16 + 13] == (PTLR*512 - 1)) then
   print EMA;
 
   R1 = 3;
-  R2 = [SYSTEM_STATUS_TABLE + 1];
+  R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
   call MOD_1;
 
   call MOD_5;
