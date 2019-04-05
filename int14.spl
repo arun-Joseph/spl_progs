@@ -1,17 +1,20 @@
+alias currentPID R11;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 alias sysCallNo R1;
 sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
 
 if(sysCallNo == 19) then          //SemLock
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 19;
+  [PROCESS_TABLE + currentPID*16 + 9] = 19;
 
   alias userAreaPage R5;
-  userAreaPage = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+  userAreaPage = [PROCESS_TABLE + currentPID*16 + 11];
 
   alias semDesc R6;
   semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
@@ -20,36 +23,36 @@ if(sysCallNo == 19) then          //SemLock
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
 
   alias semIndex R7;
   semIndex = [userAreaPage*512 + 496 + 2*semDesc + 1];
-  while([SEMAPHORE_TABLE + semIndex*4] != -1 && [SEMAPHORE_TABLE + semIndex*4] != [SYSTEM_STATUS_TABLE + 1]) do
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_SEMAPHORE;
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 5] = semIndex;
+  while([SEMAPHORE_TABLE + semIndex*4] != -1 && [SEMAPHORE_TABLE + semIndex*4] != currentPID) do
+    [PROCESS_TABLE + currentPID*16 + 4] = WAIT_SEMAPHORE;
+    [PROCESS_TABLE + currentPID*16 + 5] = semIndex;
 
-    multipush(R0, R1, R5, R6, R7);
+    multipush(R0, R1, R5, R6, R7, R11);
     call MOD_5;
-    multipop(R0, R1, R5, R6, R7);
+    multipop(R0, R1, R5, R6, R7, R11);
   endwhile;
 
-  [SEMAPHORE_TABLE + semIndex*4] = [SYSTEM_STATUS_TABLE + 1];
+  [SEMAPHORE_TABLE + semIndex*4] = currentPID;
 
   alias physicalAddrRetVal R8;
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = 0;
 
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
 endif;
 
 if(sysCallNo == 20) then          //SemUnlock
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 20;
+  [PROCESS_TABLE + currentPID*16 + 9] = 20;
 
   alias userAreaPage R5;
-  userAreaPage = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11];
+  userAreaPage = [PROCESS_TABLE + currentPID*16 + 11];
 
   alias semDesc R6;
   semDesc = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
@@ -58,7 +61,7 @@ if(sysCallNo == 20) then          //SemUnlock
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
-    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
@@ -66,12 +69,12 @@ if(sysCallNo == 20) then          //SemUnlock
   alias semIndex R7;
   semIndex = [userAreaPage*512 + 496 + 2*semDesc + 1];
   if([SEMAPHORE_TABLE + semIndex*4] != -1) then
-    if([SEMAPHORE_TABLE + semIndex*4] != [SYSTEM_STATUS_TABLE + 1]) then
+    if([SEMAPHORE_TABLE + semIndex*4] != currentPID) then
       alias physicalAddrRetVal R8;
       physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
       [physicalAddrRetVal] = -2;
 
-      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+      [PROCESS_TABLE + currentPID*16 + 9] = 0;
       SP = userSP;
       ireturn;
     endif;
@@ -92,7 +95,7 @@ if(sysCallNo == 20) then          //SemUnlock
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = 0;
 
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
 endif;
 
 SP = userSP;

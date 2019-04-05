@@ -1,10 +1,13 @@
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 27;
+alias currentPID R11;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
+[PROCESS_TABLE + currentPID*16 + 9] = 27;
 
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 alias userID R1;
 userID = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
@@ -12,12 +15,12 @@ userID = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
 alias password R2;
 password = [[PTBR + 2*(userSP - 3)/512]*512 + (userSP - 3)%512];
 
-if([SYSTEM_STATUS_TABLE + 1] != 1) then
+if(currentPID != 1) then
   alias physicalAddrRetVal R3;
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -2;
 
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
   SP = userSP;
   ireturn;
 endif;
@@ -38,7 +41,7 @@ if(userIndex == 16 || [USER_TABLE + 2*userIndex + 1] != password) then
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -1;
 
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
   SP = userSP;
   ireturn;
 endif;
@@ -50,14 +53,14 @@ endif;
 [PROCESS_TABLE + 20] = WAIT_PROCESS;
 [PROCESS_TABLE + 21] = 2;
 
-multipush(R0, R1, R2, R3);
+backup;
 call MOD_5;
-multipop(R0, R1, R2, R3);
+restore;
 
 alias physicalAddrRetVal R4;
 physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
 [physicalAddrRetVal] = 0;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+[PROCESS_TABLE + currentPID*16 + 9] = 0;
 SP = userSP;
 ireturn;

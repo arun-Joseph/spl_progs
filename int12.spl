@@ -1,24 +1,27 @@
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 28;
+alias currentPID R11;
+currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+
+[PROCESS_TABLE + currentPID*16 + 9] = 28;
 
 alias userSP R0;
 userSP = SP;
 
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
-SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
-if([SYSTEM_STATUS_TABLE + 1] != 2) then
+if(currentPID != 2) then
   alias physicalAddrRetVal R3;
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -2;
 
-  [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+  [PROCESS_TABLE + currentPID*16 + 9] = 0;
   SP = userSP;
   ireturn;
 endif;
 
 multipush(R0);
 R1 = 5;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = currentPID;
 call MOD_1;
 multipop(R0);
 
