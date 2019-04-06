@@ -1,7 +1,3 @@
-R1 = 1;
-R2 = SCHEDULER_LOCK;
-call MOD_8;
-
 alias currentPID R0;
 currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 multipush(BP);
@@ -25,6 +21,11 @@ else
   while(counter != currentPID) do
     if(counter == 0) then
       counter = 1;
+      continue;
+    endif;
+
+    if(counter == 14) then
+      counter = 15;
       continue;
     endif;
 
@@ -56,7 +57,7 @@ new_process_table = PROCESS_TABLE + newPID*16;
 SP = [new_process_table + 11]*512 + [new_process_table + 12];
 PTBR = [new_process_table + 14];
 PTLR = [new_process_table + 15];
-[SYSTEM_STATUS_TABLE + 1] = newPID;
+[SYSTEM_STATUS_TABLE + 5*CORE + 1] = newPID;
 
 if([new_process_table + 4] == CREATED) then
   [new_process_table + 4] = RUNNING;
@@ -68,9 +69,5 @@ endif;
 
 [new_process_table + 4] = RUNNING;
 multipop(BP);
-
-R1 = 2;
-R2 = SCHEDULER_LOCK;
-call MOD_8;
 
 return;

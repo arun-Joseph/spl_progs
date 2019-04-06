@@ -80,7 +80,7 @@ process_table_entry = PROCESS_TABLE + 16*15;
 PTBR = PAGE_TABLE_BASE;
 PTLR = 10;
 SP = 8*512;
-breakpoint;
+
 start;
 reset;
 ireturn;

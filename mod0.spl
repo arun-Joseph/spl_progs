@@ -5,9 +5,9 @@ if(functionNum == 1) then         //Acquire Buffer
   while([BUFFER_TABLE + R2*4 + 2] != -1) do
     [PROCESS_TABLE + R3*16 + 4] = WAIT_BUFFER;
     [PROCESS_TABLE + R3*16 + 5] = R2;
-    multipush(R1, R2, R3);
+    backup;
     call MOD_5;
-    multipop(R1, R2, R3);
+    restore;
   endwhile;
 
   [BUFFER_TABLE + R2*4 + 2] = R3;
@@ -37,9 +37,9 @@ endif;
 if(functionNum == 3) then         //Acquire Disk
   while([DISK_STATUS_TABLE] == 1) do
     [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
-    multipush(R1, R2);
+    backup;
     call MOD_5;
-    multipop(R1, R2);
+    restore;
   endwhile;
 
   [DISK_STATUS_TABLE] = 1;
@@ -50,9 +50,9 @@ if(functionNum == 4) then         //Acquire Inode
   while([FILE_STATUS_TABLE + R2*4] != -1) do
     [PROCESS_TABLE + R3*16 + 4] = WAIT_FILE;
     [PROCESS_TABLE + R3*16 + 5] = R2;
-    multipush(R1, R2, R3);
+    backup;
     call MOD_5;
-    multipop(R1, R2, R3);
+    restore;
   endwhile;
 
   if([INODE_TABLE + R2*16 + 1] == -1) then
@@ -124,9 +124,9 @@ endif;
 if(functionNum == 8) then         //Acquire Terminal
   while([TERMINAL_STATUS_TABLE] == 1) do
     [PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;
-    multipush(R1, R2);
+    backup;
     call MOD_5;
-    multipop(R1, R2);
+    restore;
   endwhile;
 
   [TERMINAL_STATUS_TABLE] = 1;
