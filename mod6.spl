@@ -22,7 +22,8 @@ if(functionNum == 1) then         //Swap Out
     state = [PROCESS_TABLE + swapPID*16 + 4];
     mode = [PROCESS_TABLE + swapPID*16 + 9];
 
-    if([PROCESS_TABLE + swapPID*16 + 6] == 1 || state == TERMINATED || state == ALLOCATED || swapPID == [SYSTEM_STATUS_TABLE + 6]) then
+    if([PROCESS_TABLE + swapPID*16 + 6] == 1 || state == TERMINATED || state == ALLOCATED
+        || swapPID == [SYSTEM_STATUS_TABLE + 6] || mode == INT_EXEC || mode == INT_EXIT) then
       swapPID = swapPID + 1;
       continue;
     endif;
@@ -60,7 +61,7 @@ if(functionNum == 1) then         //Swap Out
       endif;
     endif;
   endif;
-breakpoint;
+
   [PROCESS_TABLE + swapPID*16] = 0;
 
   counter = 2;
