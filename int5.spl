@@ -7,6 +7,9 @@ currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+R1 = 1;
+call MOD_8;
+
 alias sysCallNo R1;
 sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
 
@@ -36,6 +39,7 @@ if(sysCallNo == 2) then         //Open
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -3;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -52,6 +56,7 @@ if(sysCallNo == 2) then         //Open
   if(fileIndex < 0) then
     [physicalAddrRetVal] = fileIndex;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -77,6 +82,7 @@ if(sysCallNo == 3) then         //Close
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -110,6 +116,7 @@ if(sysCallNo == 6) then         //Seek
   if(fileDesc < 0 || fileDesc >=8 || [userAreaPageNum*512 + 496 + 2*fileDesc] != FILE) then
     [physicalAddrRetVal] = -1;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -130,6 +137,7 @@ if(sysCallNo == 6) then         //Seek
     restore;
     [physicalAddrRetVal] = -1;
 
+    [KERN_LOCK] = 0;
     SP = userSP;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     ireturn;
@@ -149,6 +157,7 @@ if(sysCallNo == 6) then         //Seek
 
     [physicalAddrRetVal] = -2;
 
+    [KERN_LOCK] = 0;
     SP = userSP;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     ireturn;
@@ -176,4 +185,6 @@ endif;
 
 [PROCESS_TABLE + currentPID*16 + 9] = 0;
 SP = userSP;
+
+[KERN_LOCK] = 0;
 ireturn;

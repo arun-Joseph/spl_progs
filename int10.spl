@@ -7,9 +7,15 @@ currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
 backup;
+R1 = 1;
+call MOD_8;
+restore;
+
+backup;
 R1 = 3;
 R2 = currentPID;
 call MOD_1;
 restore;
 
+[KERN_LOCK] = 0;
 call MOD_5;

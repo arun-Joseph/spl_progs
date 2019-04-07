@@ -9,17 +9,22 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+R1 = 1;
+call MOD_8;
+
 if(currentPID != 2 || [PROCESS_TABLE + currentPID*16 + 3] != 1) then
   alias physicalAddrRetVal R1;
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -1;
 
+  [KERN_LOCK] = 0;
   [PROCESS_TABLE + currentPID*16 + 9] = 0;
   SP = userSP;
   ireturn;
 endif;
 
 reset;
+[SCHEDULER_LOCK] = 0;
 
 backup;
 R1 = 5;

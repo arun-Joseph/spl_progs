@@ -159,7 +159,7 @@ endwhile;
 
 // Access Lock Table
 counter = 0;
-while(counter < 3) do
+while(counter < 22) do
   [ACCESS_LOCK_TABLE + counter] = 0;
   counter = counter + 1;
 endwhile;

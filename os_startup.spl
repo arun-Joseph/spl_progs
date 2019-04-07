@@ -82,5 +82,4 @@ PTLR = 10;
 SP = 8*512;
 
 start;
-reset;
 ireturn;

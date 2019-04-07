@@ -7,6 +7,9 @@ currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+R1 = 1;
+call MOD_8;
+
 alias sysCallNo R1;
 sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
 
@@ -32,6 +35,7 @@ if(sysCallNo == 1) then         //Create
     endwhile;
 
   if(inodeIndex != 60) then
+    [KERN_LOCK] = 0;
     [physicalAddrRetVal] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
@@ -47,6 +51,7 @@ if(sysCallNo == 1) then         //Create
   endwhile;
 
   if(inodeIndex == 60) then
+    [KERN_LOCK] = 0;
     [physicalAddrRetVal] = -1;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
@@ -101,6 +106,7 @@ if(sysCallNo == 4) then         //Delete
   endwhile;
 
   if(inodeIndex == 60) then
+    [KERN_LOCK] = 0;
     [physicalAddrRetVal] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
@@ -117,6 +123,7 @@ if(sysCallNo == 4) then         //Delete
   endif;
 
   if(flag == 1) then
+    [KERN_LOCK] = 0;
     [physicalAddrRetVal] = -1;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
@@ -182,6 +189,8 @@ if(sysCallNo == 4) then         //Delete
   call MOD_0;
   restore;
 endif;
+
+[KERN_LOCK] = 0;
 
 [PROCESS_TABLE + currentPID*16 + 9] = 0;
 SP = userSP;

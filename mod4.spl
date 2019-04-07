@@ -17,7 +17,13 @@ if(functionNum == 1) then         //Disk Store
   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
 
   backup;
+  [KERN_LOCK] = 0;
   call MOD_5;
+  restore;
+
+  backup;
+  R1 = 1;
+  call MOD_8;
   restore;
 endif;
 
@@ -37,7 +43,13 @@ if(functionNum == 2) then         //Disk Load
   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_DISK;
 
   backup;
+  [KERN_LOCK] = 0;
   call MOD_5;
+  restore;
+
+  backup;
+  R1 = 1;
+  call MOD_8;
   restore;
 endif;
 
@@ -68,7 +80,13 @@ if(functionNum == 4) then         //Terminal Read
   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_TERMINAL;
 
   backup;
+  [KERN_LOCK] = 0;
   call MOD_5;
+  restore;
+
+  backup;
+  R1 = 1;
+  call MOD_8;
   restore;
 
   alias word R4;

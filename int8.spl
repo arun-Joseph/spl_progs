@@ -9,8 +9,10 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
-alias val R10;
+R1 = 8;
+call MOD_8;
 
+alias val R10;
 alias newPID R1;
 multipush(R0);
 R1 = 1;
@@ -23,6 +25,7 @@ if (newPID == -1) then
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -1;
 
+  [KERN_LOCK] = 0;
   SP = userSP;
   [PROCESS_TABLE + currentPID*16 + 9] = 0;
   ireturn;
@@ -72,7 +75,6 @@ val = PROCESS_TABLE + newPID*16;
 [val] = 0;
 [val + 2] = currentPID;
 [val + 3] = [PROCESS_TABLE + currentPID*16 + 3];
-[val + 4] = CREATED;
 [val + 6] = [PROCESS_TABLE + currentPID*16 + 6];
 [val + 7] = [PROCESS_TABLE + currentPID*16 + 7];
 [val + 9] = 0;
@@ -145,6 +147,9 @@ physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
 physicalAddrRetVal = [[PROCESS_TABLE + newPID*16 + 14] + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
 [physicalAddrRetVal] = 0;
 
+[val + 4] = CREATED;
+
+[KERN_LOCK] = 0;
 SP = userSP;
 [PROCESS_TABLE + currentPID*16 + 9] = 0;
 ireturn;

@@ -2,13 +2,16 @@
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 11]*512 - 1;
 backup;
 
+R1 = 1;
+call MOD_8;
+
 alias currentPID R0;
 currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 
 alias process_table_entry R1;
 process_table_entry = PROCESS_TABLE + currentPID*16;
 
-if([SYSTEM_STATUS_TABLE + 5] != 0) then
+if([SYSTEM_STATUS_TABLE + 5] != 0 && CORE == PRIMARY_CORE) then
   if(currentPID == 15 && [SYSTEM_STATUS_TABLE + 5] == SWAP_OUT) then
     backup;
     R1 = 1;
@@ -25,7 +28,7 @@ if([SYSTEM_STATUS_TABLE + 5] != 0) then
     endif;
   endif;
 else
-  if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+  if([SYSTEM_STATUS_TABLE + 2] <= MEM_LOW) then
     [SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
   else
     alias counter R2;
@@ -57,9 +60,11 @@ while(counter < 16) do
   counter = counter + 1;
 endwhile;
 
+[KERN_LOCK] = 0;
 call MOD_5;
 
 restore;
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 13];
 [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 9] = 0;
+
 ireturn;

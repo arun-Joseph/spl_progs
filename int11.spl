@@ -7,6 +7,9 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+R1 = 1;
+call MOD_8;
+
 alias sysCallNo R1;
 sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
 
@@ -41,6 +44,7 @@ if(sysCallNo == 13) then          //Wait
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -49,9 +53,15 @@ if(sysCallNo == 13) then          //Wait
   [PROCESS_TABLE + currentPID*16 + 4] = WAIT_PROCESS;
   [PROCESS_TABLE + currentPID*16 + 5] = waitPID;
 
-  multipush(R0, R1, R2);
+  backup;
+  [KERN_LOCK] = 0;
   call MOD_5;
-  multipop(R0, R1, R2);
+  restore;
+
+  backup;
+  R1 = 1;
+  call MOD_8;
+  restore;
 
   alias physicalAddrRetVal R3;
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
@@ -79,5 +89,6 @@ if(sysCallNo == 14) then          //Signal
   [PROCESS_TABLE + currentPID*16 + 9] = 0;
 endif;
 
+[KERN_LOCK] = 0;
 SP = userSP;
 ireturn;

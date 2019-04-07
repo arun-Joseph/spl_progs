@@ -7,6 +7,9 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+R1 = 1;
+call MOD_8;
+
 alias sysCallNo R1;
 sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
 
@@ -30,6 +33,7 @@ if(sysCallNo == 17) then          //Semget
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -48,6 +52,7 @@ if(sysCallNo == 17) then          //Semget
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -2;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
@@ -76,17 +81,18 @@ if(sysCallNo == 18) then          //Semrelease
     physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
     [physicalAddrRetVal] = -1;
 
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
     SP = userSP;
     ireturn;
   endif;
 
-  multipush(R0, R1, R5, R6, R11);
+  backup;
   R1 = 7;
   R2 = [userAreaPage*512 + 496 + 2*semIndex + 1];
   R3 = currentPID;
   call MOD_0;
-  multipop(R0, R1, R5, R6, R11);
+  restore;
   [userAreaPage*512 + 496 + 2*semIndex] = -1;
 
   alias physicalAddrRetVal R2;
@@ -96,5 +102,6 @@ if(sysCallNo == 18) then          //Semrelease
   [PROCESS_TABLE + currentPID*16 + 9] = 0;
 endif;
 
+[KERN_LOCK] = 0;
 SP = userSP;
 ireturn;

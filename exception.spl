@@ -4,6 +4,9 @@ SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 11]*512 - 1;
 backup;
 multipush(EIP);
 
+R1 = 1;
+call MOD_8;
+
 alias currentPID R5;
 currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 
@@ -30,6 +33,7 @@ if(EC != 0 || [PROCESS_TABLE + currentPID*16 + 13] == (PTLR*512 - 1)) then
   R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
   call MOD_1;
 
+  [KERN_LOCK] = 0;
   call MOD_5;
 endif;
 
@@ -68,6 +72,8 @@ else
   [PTBR + 6] = page;
   [PTBR + 7] = "1110";
 endif;
+
+[KERN_LOCK] = 0;
 
 multipop(EIP);
 restore;

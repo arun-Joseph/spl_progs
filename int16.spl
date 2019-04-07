@@ -1,7 +1,16 @@
 alias currentPID R11;
 currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 
-alias sysCallNo R0;
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + currentPID*16 + 13] = SP;
+SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
+
+R1 = 1;
+call MOD_8;
+
+alias sysCallNo R12;
 sysCallNo = [[PTBR + 2*(SP - 5)/512]*512 + (SP - 5)%512];
 
 [PROCESS_TABLE + currentPID*16 + 9] = sysCallNo;
@@ -19,7 +28,9 @@ retAddr = [PTBR + 2*(SP - 1)/512]*512 + (SP - 1)%512;
 if(sysCallNo == 22) then          //Newusr
   if([SYSTEM_STATUS_TABLE] != 1 || currentPID != 2) then
     [retAddr] = -2;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -28,7 +39,9 @@ if(sysCallNo == 22) then          //Newusr
   while(userIndex < 16) do
     if([USER_TABLE + 2*userIndex] == userName) then
       [retAddr] = -1;
+      [KERN_LOCK] = 0;
       [PROCESS_TABLE + currentPID*16 + 9] = 0;
+      SP = userSP;
       ireturn;
     endif;
     userIndex = userIndex + 1;
@@ -44,7 +57,9 @@ if(sysCallNo == 22) then          //Newusr
 
   if(userIndex == 16) then
     [retAddr] = -3;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -57,7 +72,9 @@ if(sysCallNo == 23) then          //Remusr
   if([SYSTEM_STATUS_TABLE] != 1 || currentPID != 2
     || userName == "root" || userName == "kernel") then
     [retAddr] = -2;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -72,7 +89,9 @@ if(sysCallNo == 23) then          //Remusr
 
   if(userIndex == 16) then
     [retAddr] = -1;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -81,7 +100,9 @@ if(sysCallNo == 23) then          //Remusr
   while(fileIndex < 60) do
     if([ROOT_FILE + fileIndex*8 + 3] == userName) then
       [retAddr] = -1;
+      [KERN_LOCK] = 0;
       [PROCESS_TABLE + currentPID*16 + 9] = 0;
+      SP = userSP;
       ireturn;
     endif;
     fileIndex = fileIndex + 1;
@@ -94,7 +115,9 @@ endif;
 if(sysCallNo == 24) then          //Setpwd
   if(currentPID != 2) then
     [retAddr] = -1;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -109,13 +132,17 @@ if(sysCallNo == 24) then          //Setpwd
 
   if(userIndex == 16) then
     [retAddr] = -2;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
   if([SYSTEM_STATUS_TABLE] != userIndex && [SYSTEM_STATUS_TABLE] != 1) then
     [retAddr] = -1;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -126,7 +153,9 @@ endif;
 if(sysCallNo == 25) then          //Getuname
   if(userName < 0 || userName >= 16 || [USER_TABLE + 2*userName] == -1) then
     [retAddr] = -1;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
@@ -145,12 +174,15 @@ if(sysCallNo == 26) then          //Getuid
 
   if(userIndex == 16) then
     [retAddr] = -1;
+    [KERN_LOCK] = 0;
     [PROCESS_TABLE + currentPID*16 + 9] = 0;
+    SP = userSP;
     ireturn;
   endif;
 
   [retAddr] = userIndex;
 endif;
 
+[KERN_LOCK] = 0;
 [PROCESS_TABLE + currentPID*16 + 9] = 0;
 ireturn;

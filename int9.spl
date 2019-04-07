@@ -9,6 +9,11 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+backup;
+R1 = 1;
+call MOD_8;
+restore;
+
 alias fileNamePhysicalAddr R1;
 alias fileName R2;
 fileNamePhysicalAddr = [PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512;
@@ -28,6 +33,7 @@ if(inodeIndex == 60) then
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
   [physicalAddrRetVal] = -1;
 
+  [KERN_LOCK] = 0;
   [PROCESS_TABLE + currentPID*16 + 9] = 0;
   SP = userSP;
   ireturn;
@@ -116,5 +122,7 @@ endwhile;
 [[PAGE_TABLE_BASE + 20*newPID + 16]*512] = [[PAGE_TABLE_BASE + 20*newPID + 8]*512 + 1];
 SP = 8*512;
 [PROCESS_TABLE + currentPID*16 + 9] = 0;
+
+[KERN_LOCK] = 0;
 
 ireturn;

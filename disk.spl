@@ -2,6 +2,9 @@
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 11]*512 - 1;
 backup;
 
+R1 = 1;
+call MOD_8;
+
 [DISK_STATUS_TABLE] = 0;
 
 alias counter R0;
@@ -12,6 +15,8 @@ while(counter < 16) do
   endif;
   counter = counter + 1;
 endwhile;
+
+[KERN_LOCK] = 0;
 
 restore;
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 13];

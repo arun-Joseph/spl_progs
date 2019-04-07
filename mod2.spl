@@ -7,7 +7,13 @@ if(functionNum == 1) then         //Get Free Page
     [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 4] = WAIT_MEM;
 
     backup;
+    [KERN_LOCK] = 0;
     call MOD_5;
+    restore;
+
+    backup;
+    R1 = 1;
+    call MOD_8;
     restore;
   endwhile;
 
