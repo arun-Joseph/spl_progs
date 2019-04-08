@@ -28,7 +28,7 @@ if([SYSTEM_STATUS_TABLE + 5] != 0 && CORE == PRIMARY_CORE) then
     endif;
   endif;
 else
-  if([SYSTEM_STATUS_TABLE + 2] <= MEM_LOW) then
+  if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
     [SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
   else
     alias counter R2;

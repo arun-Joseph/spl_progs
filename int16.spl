@@ -7,23 +7,25 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
+backup;
 R1 = 1;
 call MOD_8;
+restore;
 
 alias sysCallNo R12;
-sysCallNo = [[PTBR + 2*(SP - 5)/512]*512 + (SP - 5)%512];
+sysCallNo = [[PTBR + 2*(userSP - 5)/512]*512 + (userSP - 5)%512];
 
 [PROCESS_TABLE + currentPID*16 + 9] = sysCallNo;
-[[PTBR + 2*(SP - 1)/512]*512 + (SP - 1)%512] = 0;
+[[PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512] = 0;
 
 alias userName R1;
-userName = [[PTBR + 2*(SP - 4)/512]*512 + (SP - 4)%512];
+userName = [[PTBR + 2*(userSP - 4)/512]*512 + (userSP - 4)%512];
 
 alias password R2;
-password = [[PTBR + 2*(SP - 3)/512]*512 + (SP - 3)%512];
+password = [[PTBR + 2*(userSP - 3)/512]*512 + (userSP - 3)%512];
 
 alias retAddr R10;
-retAddr = [PTBR + 2*(SP - 1)/512]*512 + (SP - 1)%512;
+retAddr = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
 
 if(sysCallNo == 22) then          //Newusr
   if([SYSTEM_STATUS_TABLE] != 1 || currentPID != 2) then
@@ -185,4 +187,5 @@ endif;
 
 [KERN_LOCK] = 0;
 [PROCESS_TABLE + currentPID*16 + 9] = 0;
+SP = userSP;
 ireturn;
