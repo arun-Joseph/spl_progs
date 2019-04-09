@@ -2,6 +2,16 @@ alias functionNum R1;
 alias LockID R2;
 
 if(functionNum == 1) then         // Acquire Kernel Lock
+  if(CORE == SECONDARY_CORE && ([SYSTEM_STATUS_TABLE + 5] != 0 || [SYSTEM_STATUS_TABLE + 7] != 0)) then
+    if([PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 4] == RUNNING) then
+      [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 4] = READY;
+    endif;
+
+    backup;
+    call MOD_5;
+    restore;
+  endif;
+
   while(tsl(KERN_LOCK) == 1) do
     continue;
   endwhile;
@@ -13,8 +23,8 @@ if(functionNum == 2) then         // Acquire Scheduler Lock
   endwhile;
 endif;
 
-if(functionNum == 3) then         // Acquire Pager Lock
-  while(tsl(PAGER_LOCK) == 1) do
+if(functionNum == 3) then
+  while(tsl(GLOCK) == 1) do
     continue;
   endwhile;
 endif;
