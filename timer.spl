@@ -2,9 +2,6 @@
 SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 11]*512 - 1;
 backup;
 
-R1 = 1;
-call MOD_8;
-
 alias currentPID R0;
 currentPID = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 
@@ -12,6 +9,11 @@ alias process_table_entry R1;
 process_table_entry = PROCESS_TABLE + currentPID*16;
 
 if([SYSTEM_STATUS_TABLE + 5] != 0 && CORE == PRIMARY_CORE) then
+  backup;
+  R1 = 1;
+  call MOD_8;
+  restore;
+
   if(currentPID == 15 && [SYSTEM_STATUS_TABLE + 5] == SWAP_OUT) then
     backup;
     R1 = 1;
@@ -27,24 +29,28 @@ if([SYSTEM_STATUS_TABLE + 5] != 0 && CORE == PRIMARY_CORE) then
       restore;
     endif;
   endif;
+
+  [KERN_LOCK] = 0;
 else
-  if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
-    [SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
-  else
-    alias counter R2;
-    counter = 3;
+  if([SYSTEM_STATUS_TABLE + 5] == 0) then
+    if([SYSTEM_STATUS_TABLE + 2] < MEM_LOW) then
+      [SYSTEM_STATUS_TABLE + 5] = SWAP_OUT;
+    else
+      alias counter R2;
+      counter = 3;
 
-    while(counter < 15) do
-      if([PROCESS_TABLE + counter*16 + 4] == READY
-        && [PROCESS_TABLE + counter*16 + 6] == 1
-        && [PROCESS_TABLE + counter*16] > MAX_TICK) then
-        break;
+      while(counter < 15) do
+        if([PROCESS_TABLE + counter*16 + 4] == READY
+          && [PROCESS_TABLE + counter*16 + 6] == 1
+          && [PROCESS_TABLE + counter*16] > MAX_TICK) then
+          break;
+        endif;
+        counter = counter + 1;
+      endwhile;
+
+      if([SYSTEM_STATUS_TABLE + 4] != 0 && (counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH)) then
+        [SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
       endif;
-      counter = counter + 1;
-    endwhile;
-
-    if([SYSTEM_STATUS_TABLE + 4] != 0 && (counter != 15 || [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH)) then
-      [SYSTEM_STATUS_TABLE + 5] = SWAP_IN;
     endif;
   endif;
 endif;
@@ -60,7 +66,6 @@ while(counter < 16) do
   counter = counter + 1;
 endwhile;
 
-[KERN_LOCK] = 0;
 call MOD_5;
 
 restore;

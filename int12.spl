@@ -9,11 +9,6 @@ userSP = SP;
 [PROCESS_TABLE + currentPID*16 + 13] = SP;
 SP = [PROCESS_TABLE + currentPID*16 + 11]*512 - 1;
 
-backup;
-R1 = 1;
-call MOD_8;
-reset;
-
 if(currentPID != 2) then
   alias physicalAddrRetVal R3;
   physicalAddrRetVal = [PTBR + 2*(userSP - 1)/512]*512 + (userSP - 1)%512;
@@ -24,6 +19,13 @@ if(currentPID != 2) then
   SP = userSP;
   ireturn;
 endif;
+
+[SYSTEM_STATUS_TABLE + 7] = 1;
+
+backup;
+R1 = 1;
+call MOD_8;
+reset;
 
 backup;
 R1 = 5;
@@ -38,5 +40,6 @@ restore;
 [PROCESS_TABLE + 20] = READY;
 [SYSTEM_STATUS_TABLE] = 0;
 
+[SYSTEM_STATUS_TABLE + 7] = 0;
 [KERN_LOCK] = 0;
 call MOD_5;

@@ -5,11 +5,6 @@ alias counter R4;
 alias page R5;
 alias block R6;
 
-backup;
-R1 = 3;
-call MOD_8;
-restore;
-
 if(functionNum == 1) then         //Swap Out
   alias p1 R10;
   alias p2 R11;
@@ -56,7 +51,6 @@ if(functionNum == 1) then         //Swap Out
         swapPID = p2;
       else
         [SYSTEM_STATUS_TABLE + 5] = 0;
-        [PAGER_LOCK] = 0;
         return;
       endif;
     endif;
@@ -128,7 +122,6 @@ if(functionNum == 2) then         //Swap In
   swapPID = p1;
   if(swapPID == -1) then
     [SYSTEM_STATUS_TABLE + 5] = 0;
-    [PAGER_LOCK] = 0;
     return;
   endif;
 
@@ -180,5 +173,4 @@ if(functionNum == 2) then         //Swap In
   [SYSTEM_STATUS_TABLE + 5] = 0;
 endif;
 
-[PAGER_LOCK] = 0;
 return;
