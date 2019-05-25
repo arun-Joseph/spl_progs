@@ -23,7 +23,7 @@ if(functionNum == 2) then         // Acquire Scheduler Lock
   endwhile;
 endif;
 
-if(functionNum == 3) then
+if(functionNum == 3) then         // Acquire Glock
   while(tsl(GLOCK) == 1) do
     continue;
   endwhile;

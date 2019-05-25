@@ -1,7 +1,7 @@
 alias counter R0;
 
 counter = 2;
-while(counter <= 53) do
+while(counter < 54) do
   loadi(counter, counter + 13);
   counter = counter + 1;
 endwhile;
@@ -16,10 +16,12 @@ loadi(65, 7);
 loadi(66, 8);
 loadi(67, 9);
 loadi(68, 10);
-loadi(128, 512);
-loadi(129, 513);
-loadi(132, 516);
-loadi(133, 517);
+
+counter = 128;
+while(counter < 144) do
+  loadi(counter, counter + 384);
+  counter = counter + 1;
+endwhile;
 
 // Init Program
 PTBR = PAGE_TABLE_BASE;
